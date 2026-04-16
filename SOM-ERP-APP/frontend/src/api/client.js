@@ -43,8 +43,8 @@ export const packsApi = {
   get: (packId) => api.get(`/packs/${encodeURIComponent(packId)}`),
   nextLot: (itemCode) => api.get(`/packs/next-lot/${itemCode}`),
   pendingInward: () => api.get('/packs/pending/inward'),
-  labelUrl: (packId) => `${import.meta.env.VITE_API_URL}/api/packs/label/${encodeURIComponent(packId)}`,
-  batchLabelsUrl: (itemcode, lotNo) => '$import.meta.env.VITE_API_URL}/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,'
+  labelUrl: (packId) => `https://som-erp-backend.onrender.com/api/packs/label/${encodeURIComponent(packId)}`,
+batchLabelsUrl: (itemCode, lotNo) => `https://som-erp-backend.onrender.com/api/packs/labels/lot/${itemCode}/${encodeURIComponent(lotNo)}`,
 }
 
 export const inwardApi = {
