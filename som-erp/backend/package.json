@@ -1,0 +1,33 @@
+{
+  "name": "som-erp-backend",
+  "version": "1.0.0",
+  "description": "SOM ERP — QR Inventory & Production System Backend",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node src/db/seed.js",
+    "db:post-migrate": "psql $DATABASE_URL -f prisma/migrations/001_immutability_and_indexes.sql",
+    "db:setup": "npm run db:migrate && npm run db:post-migrate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/multipart": "^8.3.0",
+    "@fastify/static": "^7.0.4",
+    "fastify": "^4.28.1",
+    "qrcode": "^1.5.4",
+    "pdfkit": "^0.15.0",
+    "xlsx": "^0.18.5",
+    "dayjs": "^1.11.11",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "prisma": "^5.14.0"
+  }
+}

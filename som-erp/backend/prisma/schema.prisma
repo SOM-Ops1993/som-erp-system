@@ -1,0 +1,338 @@
+// SOM ERP — QR Inventory & Production System
+// Prisma Schema — PostgreSQL 16
+// Auto-generated lot numbers, immutable ledger, pack-level traceability
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// PRODUCT MASTER — Products with plant/equipment defaults
+// ─────────────────────────────────────────────
+model ProductMaster {
+  productCode String   @id @map("product_code") @db.VarChar(30)
+  productName String   @map("product_name") @db.VarChar(200)
+  batchUnit   String   @default("Kg") @map("batch_unit") @db.VarChar(10)
+  plant       String?  @db.VarChar(100)
+  equipment   String?  @db.VarChar(100)
+  category    String?  @db.VarChar(100)
+  remarks     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("product_master")
+}
+
+// ─────────────────────────────────────────────
+// SFG MASTER — Semi-Finished Goods tracking per indent
+// ─────────────────────────────────────────────
+model SfgMaster {
+  sfgId         String   @id @default(cuid()) @map("sfg_id")
+  indentId      String   @unique @map("indent_id") @db.VarChar(30)
+  productCode   String   @map("product_code") @db.VarChar(30)
+  productName   String   @map("product_name") @db.VarChar(200)
+  targetQty     Decimal  @map("target_qty") @db.Decimal(12, 3)
+  batchUnit     String   @default("Kg") @map("batch_unit") @db.VarChar(10)
+  formulatedQty Decimal  @default(0) @map("formulated_qty") @db.Decimal(12, 3)
+  sfgQty        Decimal  @default(0) @map("sfg_qty") @db.Decimal(12, 3)
+  packedQty     Decimal  @default(0) @map("packed_qty") @db.Decimal(12, 3)
+  status        String   @default("OPEN") @db.VarChar(20)
+  // status: OPEN | FORMULATING | PACKING | COMPLETE
+  remarks       String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([productCode])
+  @@index([status])
+  @@map("sfg_master")
+}
+
+// ─────────────────────────────────────────────
+// RM MASTER — Raw Material Catalogue
+// ─────────────────────────────────────────────
+model RmMaster {
+  itemCode     String   @id @map("item_code") @db.VarChar(20)
+  itemName     String   @unique @map("item_name") @db.VarChar(200)
+  uom          String   @db.VarChar(10)
+  reorderLevel Decimal? @map("reorder_level") @db.Decimal(12, 3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relations
+  lotSequences   LotSequence[]
+  printMasters   PrintMaster[]
+  inwardRecords  Inward[]
+  containers     ContainerMaster[]
+  recipeEntries  RecipeDb[]
+  indentDetails  IndentDetails[]
+  outwardRecords Outward[]
+  stockLedgers   StockLedger[]
+  packBalances   PackBalance[]
+
+  @@map("rm_master")
+}
+
+// ─────────────────────────────────────────────
+// LOT SEQUENCE — Auto-increment per (item, year)
+// ─────────────────────────────────────────────
+model LotSequence {
+  itemCode String @map("item_code") @db.VarChar(20)
+  year     Int
+  lastSeq  Int    @default(0) @map("last_seq")
+
+  rmMaster RmMaster @relation(fields: [itemCode], references: [itemCode])
+
+  @@id([itemCode, year])
+  @@map("lot_sequence")
+}
+
+// ─────────────────────────────────────────────
+// PRINT MASTER — All generated pack labels
+// ─────────────────────────────────────────────
+model PrintMaster {
+  packId        String   @id @map("pack_id") @db.VarChar(60)
+  itemCode      String   @map("item_code") @db.VarChar(20)
+  itemName      String   @map("item_name") @db.VarChar(200)
+  lotNo         String   @map("lot_no") @db.VarChar(30)
+  bagNo         Int      @map("bag_no")
+  packQty       Decimal  @map("pack_qty") @db.Decimal(12, 3)
+  uom           String   @db.VarChar(10)
+  labelName     String?  @map("label_name") @db.VarChar(20)
+  receivedDate  DateTime? @map("received_date") @db.Date
+  supplier      String?  @db.VarChar(200)
+  invoiceNo     String?  @map("invoice_no") @db.VarChar(100)
+  supplierBatch String?  @map("supplier_batch") @db.VarChar(100)
+  remarks       String?  @db.Text
+  status        String   @default("AWAITING_INWARD") @db.VarChar(20)
+  // status: AWAITING_INWARD | INWARDED | PARTIALLY_ISSUED | EXHAUSTED
+  isLegacy      Boolean  @default(false) @map("is_legacy")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relations
+  rmMaster    RmMaster    @relation(fields: [itemCode], references: [itemCode])
+  inward      Inward?
+  packBalance PackBalance?
+
+  @@unique([itemCode, lotNo, bagNo])
+  @@index([itemCode, status])
+  @@index([lotNo])
+  @@map("print_master")
+}
+
+// ─────────────────────────────────────────────
+// INWARD SESSION — Bulk scan buffer (DB-backed)
+// ─────────────────────────────────────────────
+model InwardSession {
+  sessionId      String   @id @default(uuid()) @map("session_id") @db.VarChar(40)
+  itemCode       String   @map("item_code") @db.VarChar(20)
+  itemName       String   @map("item_name") @db.VarChar(200)
+  lotNo          String   @map("lot_no") @db.VarChar(30)
+  warehouse      String   @db.VarChar(100)
+  expectedBags   Int      @map("expected_bags")
+  scannedPackIds String[] @default([]) @map("scanned_pack_ids")
+  sessionStatus  String   @default("ACTIVE") @map("session_status") @db.VarChar(20)
+  // status: ACTIVE | SUBMITTED | ABANDONED
+  createdBy      String?  @map("created_by") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  submittedAt    DateTime? @map("submitted_at") @db.Timestamptz(6)
+  expiresAt      DateTime @default(dbgenerated("NOW() + INTERVAL '4 hours'")) @map("expires_at") @db.Timestamptz(6)
+
+  @@index([sessionStatus])
+  @@map("inward_session")
+}
+
+// ─────────────────────────────────────────────
+// INWARD — Confirmed stock receipts
+// ─────────────────────────────────────────────
+model Inward {
+  inwardId      BigInt   @id @default(autoincrement()) @map("inward_id")
+  packId        String   @unique @map("pack_id") @db.VarChar(60)
+  itemCode      String   @map("item_code") @db.VarChar(20)
+  itemName      String   @map("item_name") @db.VarChar(200)
+  lotNo         String   @map("lot_no") @db.VarChar(30)
+  bagNo         Int      @map("bag_no")
+  qty           Decimal  @db.Decimal(12, 3)
+  uom           String   @db.VarChar(10)
+  warehouse     String   @db.VarChar(100)
+  inwardDate    DateTime @map("inward_date") @db.Date
+  inwardTime    DateTime @default(now()) @map("inward_time") @db.Timestamptz(6)
+  transactedBy  String?  @map("transacted_by") @db.VarChar(100)
+  batchId       String?  @map("batch_id") @db.VarChar(40)
+  isLegacy      Boolean  @default(false) @map("is_legacy")
+
+  // Relations
+  rmMaster   RmMaster    @relation(fields: [itemCode], references: [itemCode])
+  printMaster PrintMaster @relation(fields: [packId], references: [packId])
+
+  @@index([itemCode, inwardDate])
+  @@index([lotNo])
+  @@index([warehouse])
+  @@map("inward")
+}
+
+// ─────────────────────────────────────────────
+// PACK BALANCE — Real-time remaining qty per pack
+// ─────────────────────────────────────────────
+model PackBalance {
+  packId       String   @id @map("pack_id") @db.VarChar(60)
+  itemCode     String   @map("item_code") @db.VarChar(20)
+  originalQty  Decimal  @map("original_qty") @db.Decimal(12, 3)
+  issuedQty    Decimal  @default(0) @map("issued_qty") @db.Decimal(12, 3)
+  remainingQty Decimal  @map("remaining_qty") @db.Decimal(12, 3)
+  isExhausted  Boolean  @default(false) @map("is_exhausted")
+  lastUpdated  DateTime @default(now()) @map("last_updated") @db.Timestamptz(6)
+
+  printMaster PrintMaster @relation(fields: [packId], references: [packId])
+  rmMaster    RmMaster    @relation(fields: [itemCode], references: [itemCode])
+
+  @@index([itemCode, isExhausted])
+  @@map("pack_balance")
+}
+
+// ─────────────────────────────────────────────
+// CONTAINER MASTER — One per item
+// ─────────────────────────────────────────────
+model ContainerMaster {
+  containerId String   @id @map("container_id") @db.VarChar(30)
+  itemCode    String   @unique @map("item_code") @db.VarChar(20)
+  itemName    String   @map("item_name") @db.VarChar(200)
+  capacity    Decimal? @db.Decimal(12, 3)
+  currentQty  Decimal  @default(0) @map("current_qty") @db.Decimal(12, 3)
+  uom         String   @db.VarChar(10)
+  status      String   @default("EMPTY") @db.VarChar(20)
+  // status: EMPTY | ACTIVE | INACTIVE
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  rmMaster RmMaster @relation(fields: [itemCode], references: [itemCode])
+
+  @@map("container_master")
+}
+
+// ─────────────────────────────────────────────
+// RECIPE DB — BOM (Bill of Materials)
+// ─────────────────────────────────────────────
+model RecipeDb {
+  recipeId    BigInt   @id @default(autoincrement()) @map("recipe_id")
+  productCode String   @map("product_code") @db.VarChar(30)
+  productName String   @map("product_name") @db.VarChar(200)
+  batchUnit   String   @map("batch_unit") @db.VarChar(10)
+  rmCode      String   @map("rm_code") @db.VarChar(20)
+  rmName      String   @map("rm_name") @db.VarChar(200)
+  qtyPerUnit  Decimal  @map("qty_per_unit") @db.Decimal(12, 4)
+  uom         String   @db.VarChar(10)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  rmMaster RmMaster @relation(fields: [rmCode], references: [itemCode])
+
+  @@unique([productCode, rmCode])
+  @@index([productCode])
+  @@map("recipe_db")
+}
+
+// ─────────────────────────────────────────────
+// INDENT MASTER — Production work orders
+// ─────────────────────────────────────────────
+model IndentMaster {
+  indentId    String   @id @map("indent_id") @db.VarChar(30)
+  productCode String   @map("product_code") @db.VarChar(30)
+  productName String   @map("product_name") @db.VarChar(200)
+  batchSize   Decimal  @map("batch_size") @db.Decimal(12, 3)
+  batchUnit   String   @map("batch_unit") @db.VarChar(10)
+  plant       String?  @db.VarChar(100)
+  diNo        String?  @map("di_no") @db.VarChar(100)
+  status      String   @default("OPEN") @db.VarChar(20)
+  // status: OPEN | PARTIAL | COMPLETE | CANCELLED | PENDING_STOCK
+  createdBy   String?  @map("created_by") @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  closedAt    DateTime? @map("closed_at") @db.Timestamptz(6)
+
+  details IndentDetails[]
+  outward Outward[]
+
+  @@index([status])
+  @@map("indent_master")
+}
+
+// ─────────────────────────────────────────────
+// INDENT DETAILS — RM requirements per indent
+// ─────────────────────────────────────────────
+model IndentDetails {
+  detailId    BigInt  @id @default(autoincrement()) @map("detail_id")
+  indentId    String  @map("indent_id") @db.VarChar(30)
+  rmCode      String  @map("rm_code") @db.VarChar(20)
+  rmName      String  @map("rm_name") @db.VarChar(200)
+  qtyPerUnit  Decimal @map("qty_per_unit") @db.Decimal(12, 4)
+  requiredQty Decimal @map("required_qty") @db.Decimal(12, 3)
+  issuedQty   Decimal @default(0) @map("issued_qty") @db.Decimal(12, 3)
+  // balance_qty = requiredQty - issuedQty (computed in app layer)
+  status      String  @default("PENDING") @db.VarChar(20)
+  // status: PENDING | PARTIAL | COMPLETE
+
+  indentMaster IndentMaster @relation(fields: [indentId], references: [indentId])
+  rmMaster     RmMaster     @relation(fields: [rmCode], references: [itemCode])
+
+  @@unique([indentId, rmCode])
+  @@index([indentId])
+  @@map("indent_details")
+}
+
+// ─────────────────────────────────────────────
+// OUTWARD — All stock exits
+// ─────────────────────────────────────────────
+model Outward {
+  outwardId       BigInt   @id @default(autoincrement()) @map("outward_id")
+  transactionType String   @map("transaction_type") @db.VarChar(30)
+  // BOM_ISSUANCE | PACK_REDUCTION | STOCK_RECON | WAREHOUSE_TRANSFER | JOB_WORK
+  sourceId        String   @map("source_id") @db.VarChar(60)
+  sourceType      String   @map("source_type") @db.VarChar(20)
+  // PACK | CONTAINER
+  destinationId   String?  @map("destination_id") @db.VarChar(60)
+  rmCode          String   @map("rm_code") @db.VarChar(20)
+  qtyIssued       Decimal  @map("qty_issued") @db.Decimal(12, 3)
+  uom             String   @db.VarChar(10)
+  indentId        String?  @map("indent_id") @db.VarChar(30)
+  destination     String?  @db.VarChar(200)
+  bomRef          String?  @map("bom_ref") @db.VarChar(100)
+  remarks         String?  @db.Text
+  transactedBy    String?  @map("transacted_by") @db.VarChar(100)
+  isLegacy        Boolean  @default(false) @map("is_legacy")
+  timestamp       DateTime @default(now()) @db.Timestamptz(6)
+
+  rmMaster     RmMaster      @relation(fields: [rmCode], references: [itemCode])
+  indentMaster IndentMaster? @relation(fields: [indentId], references: [indentId])
+
+  @@index([rmCode, timestamp])
+  @@index([indentId])
+  @@index([sourceId])
+  @@map("outward")
+}
+
+// ─────────────────────────────────────────────
+// STOCK LEDGER — Immutable audit trail
+// Running balance stored at each write (never recalculated)
+// ─────────────────────────────────────────────
+model StockLedger {
+  ledgerId        BigInt   @id @default(autoincrement()) @map("ledger_id")
+  itemCode        String   @map("item_code") @db.VarChar(20)
+  sourceId        String   @map("source_id") @db.VarChar(60)
+  sourceType      String   @map("source_type") @db.VarChar(20)
+  transactionType String   @map("transaction_type") @db.VarChar(30)
+  inQty           Decimal  @default(0) @map("in_qty") @db.Decimal(12, 3)
+  outQty          Decimal  @default(0) @map("out_qty") @db.Decimal(12, 3)
+  balance         Decimal  @db.Decimal(12, 3)
+  reference       String?  @db.VarChar(200)
+  transactedBy    String?  @map("transacted_by") @db.VarChar(100)
+  isLegacy        Boolean  @default(false) @map("is_legacy")
+  timestamp       DateTime @default(now()) @db.Timestamptz(6)
+
+  rmMaster RmMaster @relation(fields: [itemCode], references: [itemCode])
+
+  @@index([itemCode, timestamp(sort: Desc)])
+  @@index([sourceId])
+  @@map("stock_ledger")
+}

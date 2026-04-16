@@ -1,0 +1,398 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model RmMaster {
+  itemCode     String   @id @map("item_code")
+  itemName     String   @unique @map("item_name")
+  uom          String
+  trackingType String   @default("PACK") @map("tracking_type") // PACK | BULK
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  @@map("rm_master")
+}
+
+// ─── BULK TRACKING ───────────────────────────────────────────────────────────
+
+model BulkLocation {
+  locationId   String         @id @map("location_id")   // e.g. LOC-001, LOC-SHELF-A2
+  locationName String         @map("location_name")
+  itemCode     String         @map("item_code")
+  itemName     String         @map("item_name")
+  uom          String         @default("KG")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  lotEntries   BulkLotEntry[]
+  @@map("bulk_location")
+}
+
+model BulkLotEntry {
+  id           String       @id @default(cuid())
+  locationId   String       @map("location_id")
+  itemCode     String       @map("item_code")
+  itemName     String       @map("item_name")
+  lotNo        String       @map("lot_no")           // e.g. BULK-151464-2026-001
+  supplier     String?
+  invoiceNo    String?      @map("invoice_no")
+  receivedDate DateTime?    @map("received_date")
+  receivedQty  Float        @map("received_qty")
+  remainingQty Float        @map("remaining_qty")
+  uom          String       @default("KG")
+  status       String       @default("ACTIVE")       // ACTIVE | EXHAUSTED
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  location     BulkLocation @relation(fields: [locationId], references: [locationId])
+  @@map("bulk_lot_entry")
+}
+
+model BulkLotSequence {
+  itemCode String @map("item_code")
+  year     Int
+  seq      Int    @default(0)
+  @@id([itemCode, year])
+  @@map("bulk_lot_sequence")
+}
+
+model ProductMaster {
+  productCode String   @id @map("product_code")
+  productName String   @unique @map("product_name")
+  plant       String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  @@map("product_master")
+}
+
+model EquipmentMaster {
+  equipId       String   @id @default(cuid()) @map("equip_id")
+  equipName     String   @unique @map("equip_name")
+  workingVolume Float?   @map("working_volume")
+  operation     String   @default("") @map("operation")
+  plant         String   @default("")
+  createdAt     DateTime @default(now()) @map("created_at")
+  @@map("equipment_master")
+}
+
+model LotSequence {
+  itemCode String @map("item_code")
+  year     Int
+  seq      Int    @default(0)
+  @@id([itemCode, year])
+  @@map("lot_sequence")
+}
+
+model PrintMaster {
+  packId       String    @id @map("pack_id")
+  itemCode     String    @map("item_code")
+  itemName     String    @map("item_name")
+  lotNo        String    @map("lot_no")
+  bagNo        Int       @map("bag_no")
+  packQty      Float     @map("pack_qty")
+  uom          String
+  supplier     String?
+  invoiceNo    String?   @map("invoice_no")
+  receivedDate DateTime? @map("received_date")
+  status       String    @default("AWAITING_INWARD")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  @@unique([itemCode, lotNo, bagNo])
+  @@map("print_master")
+}
+
+model InwardSession {
+  sessionId      String   @id @default(cuid()) @map("session_id")
+  itemCode       String   @map("item_code")
+  lotNo          String   @map("lot_no")
+  warehouse      String
+  expectedBags   Int      @map("expected_bags")
+  scannedPackIds String[] @map("scanned_pack_ids")
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  @@map("inward_session")
+}
+
+model Inward {
+  id         String   @id @default(cuid())
+  packId     String   @map("pack_id")
+  itemCode   String   @map("item_code")
+  itemName   String   @map("item_name")
+  lotNo      String   @map("lot_no")
+  bagNo      Int      @map("bag_no")
+  qty        Float
+  inwardTime DateTime @default(now()) @map("inward_time")
+  warehouse  String
+  @@map("inward")
+}
+
+model PackBalance {
+  packId       String @id @map("pack_id")
+  itemCode     String @map("item_code")
+  totalQty     Float  @map("total_qty")
+  remainingQty Float  @map("remaining_qty")
+  @@map("pack_balance")
+}
+
+model ContainerMaster {
+  containerId String @id @map("container_id")
+  itemCode    String @unique @map("item_code")
+  itemName    String @map("item_name")
+  capacity    Float
+  currentQty  Float  @default(0) @map("current_qty")
+  uom         String
+  @@map("container_master")
+}
+
+model RecipeDb {
+  id          String @id @default(cuid())
+  productCode String @map("product_code")
+  productName String @map("product_name")
+  rmCode      String @map("rm_code")
+  rmName      String @map("rm_name")
+  qtyPerUnit  Float  @map("qty_per_unit")
+  uom         String
+  @@unique([productCode, rmCode])
+  @@map("recipe_db")
+}
+
+model IndentMaster {
+  indentId        String        @id @default(cuid()) @map("indent_id")
+  productCode     String        @map("product_code")
+  productName     String        @map("product_name")
+  batchSize       Float         @map("batch_size")
+  batchNo         String        @map("batch_no")
+  diNo            String        @map("di_no")
+  plant           String        @default("")
+  equipment       String        @default("")
+  cycleBatchSize  Float?        @map("cycle_batch_size")   // per-cycle qty when multi-cycle
+  cycleNo         Int?          @map("cycle_no")            // which cycle this indent is (1-based)
+  totalCycles     Int?          @map("total_cycles")        // total cycles for this DI
+  status          String        @default("OPEN")
+  poSentAt        DateTime?     @map("po_sent_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  details         IndentDetails[]
+  productionBatches ProductionBatch[]
+  @@map("indent_master")
+}
+
+model IndentDetails {
+  id          String       @id @default(cuid())
+  indentId    String       @map("indent_id")
+  rmCode      String       @map("rm_code")
+  rmName      String       @map("rm_name")
+  requiredQty Float        @map("required_qty")
+  issuedQty   Float        @default(0) @map("issued_qty")
+  balanceQty  Float        @map("balance_qty")
+  indent      IndentMaster @relation(fields: [indentId], references: [indentId])
+  @@map("indent_details")
+}
+
+model Outward {
+  id         String   @id @default(cuid())
+  indentId   String?  @map("indent_id")
+  sourceId   String   @map("source_id")
+  sourceType String   @map("source_type")
+  rmCode     String   @map("rm_code")
+  qtyIssued  Float    @map("qty_issued")
+  remarks    String?
+  timestamp  DateTime @default(now())
+  @@map("outward")
+}
+
+model StockLedger {
+  id              String   @id @default(cuid())
+  itemCode        String   @map("item_code")
+  sourceId        String   @map("source_id")
+  transactionType String   @map("transaction_type")
+  inQty           Float    @default(0) @map("in_qty")
+  outQty          Float    @default(0) @map("out_qty")
+  balance         Float
+  reference       String?
+  timestamp       DateTime @default(now())
+  @@map("stock_ledger")
+}
+
+model SfgMaster {
+  sfgId         String   @id @default(cuid()) @map("sfg_id")
+  indentId      String   @map("indent_id")
+  productCode   String   @map("product_code")
+  productName   String   @map("product_name")
+  targetQty     Float    @map("target_qty")
+  formulatedQty Float    @default(0) @map("formulated_qty")
+  sfgQty        Float    @default(0) @map("sfg_qty")
+  packedQty     Float    @default(0) @map("packed_qty")
+  status        String   @default("OPEN")
+  remarks       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  @@map("sfg_master")
+}
+
+// ─── PRODUCTION MASTER ────────────────────────────────────────────────────────
+
+model ProductionBatch {
+  id              String    @id @default(cuid())
+  indentId        String    @map("indent_id")
+  productCode     String    @map("product_code")
+  productName     String    @map("product_name")
+  diNo            String    @map("di_no")
+  batchCode       String    @map("batch_code")
+  orderQty        Float     @map("order_qty")
+  category        String    @default("POWDER")
+  currentStage    String    @default("BIOMASS") @map("current_stage")
+  status          String    @default("DRAFT")
+  temperature     Float?
+  humidity        Float?
+  cfuTarget       String?   @map("cfu_target")
+  biomassFlag     Boolean   @default(false) @map("biomass_flag")
+  technicalFlag   Boolean   @default(false) @map("technical_flag")
+  formulationFlag Boolean   @default(false) @map("formulation_flag")
+  sievingFlag     Boolean   @default(false) @map("sieving_flag")
+  packingFlag     Boolean   @default(false) @map("packing_flag")
+  qcFlag          Boolean   @default(false) @map("qc_flag")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  indent          IndentMaster @relation(fields: [indentId], references: [indentId])
+  biomassInputs   BiomassInput[]
+  technicalDetail TechnicalDetail?
+  formulationCycles FormulationCycle[]
+  unloadingLog    UnloadingLog?
+  sievingLog      SievingLog?
+  packingLog      PackingLog?
+  qcSample        QcSample?
+  inventoryHandover InventoryHandover?
+  @@map("production_batch")
+}
+
+model BiomassInput {
+  id            String   @id @default(cuid())
+  batchId       String   @map("batch_id")
+  cultureName   String   @default("") @map("culture_name")
+  batchNo       String   @default("") @map("batch_no")
+  doi           String   @default("") @map("doi")
+  cfuPerGram    Float?   @map("cfu_per_gram")
+  biomassQty    Float?   @map("biomass_qty")
+  moisture      Float?
+  form          String   @default("") @map("form")
+  receivedFrom  String   @default("") @map("received_from")
+  receivedDate  String   @default("") @map("received_date")
+  receivedTime  String   @default("") @map("received_time")
+  flagged       Boolean  @default(false)
+  batch         ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("biomass_input")
+}
+
+model TechnicalDetail {
+  id                String   @id @default(cuid())
+  batchId           String   @unique @map("batch_id")
+  method            String   @default("MANUAL")
+  startTime         String   @default("") @map("start_time")
+  endTime           String   @default("") @map("end_time")
+  biomassQty        Float?   @map("biomass_qty")
+  silicaQty         Float?   @map("silica_qty")
+  caco3Qty          Float?   @map("caco3_qty")
+  mgStearateQty     Float?   @map("mg_stearate_qty")
+  smpQty            Float?   @map("smp_qty")
+  totalTechnicalQty Float?   @map("total_technical_qty")
+  qtyAfterSieving   Float?   @map("qty_after_sieving")
+  wastage           Float?
+  flagged           Boolean  @default(false)
+  batch             ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("technical_detail")
+}
+
+model FormulationCycle {
+  id              String    @id @default(cuid())
+  batchId         String    @map("batch_id")
+  cycleNo         Int       @map("cycle_no")
+  formulationDate String    @default("") @map("formulation_date")
+  startTime       String    @default("") @map("start_time")
+  endTime         String    @default("") @map("end_time")
+  noOfWorkers     Int?      @map("no_of_workers")
+  sfgUsed         Boolean   @default(false) @map("sfg_used")
+  sfgId           String?   @map("sfg_id")
+  sfgDiNo         String?   @map("sfg_di_no")
+  sfgQtyUsed      Float?    @map("sfg_qty_used")
+  carrierType     String?   @map("carrier_type")
+  inchargeName    String?   @map("incharge_name")
+  flagged         Boolean   @default(false)
+  batch           ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("formulation_cycle")
+}
+
+model UnloadingLog {
+  id           String   @id @default(cuid())
+  batchId      String   @unique @map("batch_id")
+  startTime    String   @default("") @map("start_time")
+  endTime      String   @default("") @map("end_time")
+  weightAfter  Float?   @map("weight_after")
+  noOfWorkers  Int?     @map("no_of_workers")
+  inchargeName String?  @map("incharge_name")
+  flagged      Boolean  @default(false)
+  batch        ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("unloading_log")
+}
+
+model SievingLog {
+  id           String   @id @default(cuid())
+  batchId      String   @unique @map("batch_id")
+  sievingDone  Boolean  @default(false) @map("sieving_done")
+  meshSize     String?  @map("mesh_size")
+  startTime    String   @default("") @map("start_time")
+  endTime      String   @default("") @map("end_time")
+  noOfWorkers  Int?     @map("no_of_workers")
+  inchargeName String?  @map("incharge_name")
+  flagged      Boolean  @default(false)
+  batch        ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("sieving_log")
+}
+
+model PackingLog {
+  id                 String   @id @default(cuid())
+  batchId            String   @unique @map("batch_id")
+  packingType        String?  @map("packing_type")
+  weightPerUnit      Float?   @map("weight_per_unit")
+  totalUnitsPacked   Int?     @map("total_units_packed")
+  totalQtyPacked     Float?   @map("total_qty_packed")
+  unitsPerBag        Int?     @map("units_per_bag")
+  totalOuterPackages Int?     @map("total_outer_packages")
+  packingStart       String   @default("") @map("packing_start")
+  packingEnd         String   @default("") @map("packing_end")
+  labelingStart      String   @default("") @map("labeling_start")
+  labelingEnd        String   @default("") @map("labeling_end")
+  strappingStart     String   @default("") @map("strapping_start")
+  strappingEnd       String   @default("") @map("strapping_end")
+  stretchWrapping    Boolean  @default(false) @map("stretch_wrapping")
+  noOfCartons        Int?     @map("no_of_cartons")
+  noOfWorkers        Int?     @map("no_of_workers")
+  inchargeName       String?  @map("incharge_name")
+  flagged            Boolean  @default(false)
+  batch              ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("packing_log")
+}
+
+model QcSample {
+  id               String    @id @default(cuid())
+  batchId          String    @unique @map("batch_id")
+  sampleCollected  Boolean   @default(false) @map("sample_collected")
+  sampleId         String?   @map("sample_id")
+  collectedAtStage String?   @map("collected_at_stage")
+  submittedOn      String?   @map("submitted_on")
+  rxAttached       Boolean   @default(false) @map("rx_attached")
+  flagged          Boolean   @default(false)
+  batch            ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("qc_sample")
+}
+
+model InventoryHandover {
+  id                String    @id @default(cuid())
+  batchId           String    @unique @map("batch_id")
+  sentToInventoryOn String?   @map("sent_to_inventory_on")
+  handedOverTo      String?   @map("handed_over_to")
+  leftoverQtyAt     String?   @map("leftover_qty_at")
+  sfgUpdated        Boolean   @default(false) @map("sfg_updated")
+  batch             ProductionBatch @relation(fields: [batchId], references: [id])
+  @@map("inventory_handover")
+}

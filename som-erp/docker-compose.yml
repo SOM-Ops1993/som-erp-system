@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL 16 ──────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: som_erp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: som_erp
+      POSTGRES_USER: som_user
+      POSTGRES_PASSWORD: som_secure_password_change_me
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"           # Remove in production (expose only to backend)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U som_user -d som_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Backend (Node.js + Fastify) ────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: som_erp_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://som_user:som_secure_password_change_me@db:5432/som_erp
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: https://your-domain.com    # Change this
+      JWT_SECRET: change-this-to-random-64-char-string
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "3001:3001"
+
+  # ─── Frontend (Nginx serves built React) ────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: som_erp_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro     # Mount your SSL certs here
+
+volumes:
+  postgres_data:
+    driver: local
