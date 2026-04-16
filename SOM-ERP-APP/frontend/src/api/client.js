@@ -1,5 +1,6 @@
 import axios from 'axios'
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+const BASE = import.meta.env.VITE_API_URL || 'https://som-erp-backend.onrender.com'
 
 const api = axios.create({
   baseURL: `${BASE}/api`,
@@ -158,7 +159,7 @@ export const bulkApi = {
   getLocation:      (locationId) => api.get(`/bulk/${encodeURIComponent(locationId)}`),
   createLocation:   (data) => api.post('/bulk', data),
   deleteLocation:   (locationId) => api.delete(`/bulk/${encodeURIComponent(locationId)}`),
-  locationLabelUrl: (locationId) => `/api/bulk/${encodeURIComponent(locationId)}/label`,
+  locationLabelUrl: (locationId) => `https://som-erp-backend.onrender.com/api/bulk/${encodeURIComponent(locationId)}/label`,
   // Bulk inward
   bulkInward:       (data) => api.post('/bulk/inward', data),
   // Bulk outward
