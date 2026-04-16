@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE = import.meta.env.VITE_API_URL || 'https://som-erp-backend.onrender.com'
+const BASE = ''
 
 const api = axios.create({
   baseURL: `${BASE}/api`,
