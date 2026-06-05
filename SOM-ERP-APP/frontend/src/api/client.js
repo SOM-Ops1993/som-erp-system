@@ -256,10 +256,40 @@ export const cpProfileApi = {
 }
 
 export const bomSendApi = {
-  list:         (params)   => api.get('/bom-sends', { params }),
-  get:          (id)       => api.get(`/bom-sends/${id}`),
-  create:       (data)     => api.post('/bom-sends', data),
-  issuePack:    (id, data) => api.post(`/bom-sends/${id}/issue-pack`, data),
-  updateStatus: (id, status, remarks) => api.patch(`/bom-sends/${id}/status`, { status, remarks }),
-  remove:       (id)       => api.delete(`/bom-sends/${id}`),
+  list:             (params)   => api.get('/bom-sends', { params }),
+  get:              (id)       => api.get(`/bom-sends/${id}`),
+  create:           (data)     => api.post('/bom-sends', data),
+  issuePack:        (id, data) => api.post(`/bom-sends/${id}/issue-pack`, data),
+  updateStatus:     (id, status, remarks) => api.patch(`/bom-sends/${id}/status`, { status, remarks }),
+  issueToSection:   (id, data) => api.post(`/bom-sends/${id}/issue-to-section`, data),
+  acknowledge:      (id, data) => api.post(`/bom-sends/${id}/acknowledge`, data),
+  remove:           (id)       => api.delete(`/bom-sends/${id}`),
+}
+
+export const bmrApi = {
+  // BMR records
+  list:               (params)          => api.get('/bmr', { params }),
+  get:                (id)              => api.get(`/bmr/${id}`),
+  create:             (data)            => api.post('/bmr', data),
+
+  // Section saves
+  saveSectionA:       (id, data)        => api.put(`/bmr/${id}/section-a`, data),
+  saveSectionB:       (id, data)        => api.put(`/bmr/${id}/section-b`, data),
+  saveSectionC:       (id, data)        => api.put(`/bmr/${id}/section-c`, data),
+  tickChecklist:      (id, itemId, data)=> api.patch(`/bmr/${id}/section-c/checklist/${itemId}`, data),
+  saveSectionD:       (id, data)        => api.put(`/bmr/${id}/section-d`, data),
+  saveSectionE:       (id, data)        => api.put(`/bmr/${id}/section-e`, data),
+
+  // Deviations
+  saveDeviation:      (id, data)        => api.post(`/bmr/${id}/deviation`, data),
+
+  // Samples
+  createSample:       (id, data)        => api.post(`/bmr/${id}/sample`, data),
+  sendToQc:           (id, sampleId, data) => api.patch(`/bmr/${id}/sample/${sampleId}/send-to-qc`, data),
+  verifySample:       (id, sampleId, data) => api.patch(`/bmr/${id}/sample/${sampleId}/verify`, data),
+
+  // Notifications
+  notifications:      (params)          => api.get('/bmr/notifications/list', { params }),
+  markRead:           (notifId)         => api.patch(`/bmr/notifications/${notifId}/read`),
+  markAllRead:        (data)            => api.patch('/bmr/notifications/read-all', data),
 }

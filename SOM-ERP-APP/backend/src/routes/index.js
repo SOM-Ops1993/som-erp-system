@@ -37,6 +37,7 @@ import erpPlanEngineRoutes  from './erp-plan-engine.js'
 import customerProfileRoutes from './customer-profiles.js'
 import customerProductProfileRoutes from './customer-product-profiles.js'
 import bomSendRoutes from './bom-sends.js'
+import bmrRoutes     from './bmr.js'
 
 export async function registerRoutes(fastify) {
   fastify.register(rmMasterRoutes,        { prefix: '/api/rm' })
@@ -74,4 +75,5 @@ export async function registerRoutes(fastify) {
   fastify.register(customerProfileRoutes,  { prefix: '/api/customer-profiles' })
   fastify.register(customerProductProfileRoutes, { prefix: '/api/cp-profiles' })
   fastify.register(bomSendRoutes,          { prefix: '/api/bom-sends' })
+  fastify.register(bmrRoutes,              { prefix: '/api/bmr' })
 }

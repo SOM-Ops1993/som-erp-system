@@ -31,6 +31,7 @@ import Login               from './pages/erp/Login.jsx'
 import GateEntry           from './pages/erp/GateEntry.jsx'
 import InventoryManagement from './pages/erp/InventoryManagement.jsx'
 import BomIssuance         from './pages/erp/BomIssuance.jsx'
+import SectionDashboard    from './pages/erp/SectionDashboard.jsx'
 import PlanningEngine      from './pages/erp/PlanningEngine.jsx'
 import SalesOrders         from './pages/erp/SalesOrders.jsx'
 import MicrobialManagement from './pages/erp/MicrobialManagement.jsx'
@@ -90,8 +91,9 @@ const ERP_NAV = [
     { to: '/erp/microbial', label: 'Cold Room',   icon: '🧪' },
   ]},
   { group: 'PRODUCTION', items: [
-    { to: '/erp/bom',      label: 'BOM Issuance', icon: '⚗️'  },
-    { to: '/erp/planning', label: 'Planning',      icon: '📋' },
+    { to: '/erp/bom',      label: 'BOM Issuance',      icon: '⚗️'  },
+    { to: '/erp/planning', label: 'Planning',           icon: '📋' },
+    { to: '/erp/section',  label: 'Section Dashboard',  icon: '🏭' },
   ]},
   { group: 'SALES', items: [
     { to: '/erp/sales', label: 'Sales Orders', icon: '💼' },
@@ -114,6 +116,8 @@ const PAGE_NAMES = {
   planning:  '📋  Planning Engine',
   sales:     '💼  Sales Orders',
   microbial: '🧪  Cold Room IMS',
+  section:   '🏭  Section Dashboard',
+  bmr:       '📝  BMR Entry',
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -353,6 +357,7 @@ function ErpLayout() {
             <Route path="planning"  element={<PlanningEngine />} />
             <Route path="sales"     element={<SalesOrders />} />
             <Route path="microbial" element={<MicrobialManagement />} />
+            <Route path="section"   element={<SectionDashboard />} />
             <Route path="*"         element={<Navigate to="gate" replace />} />
           </Routes>
         </main>

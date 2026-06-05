@@ -640,8 +640,307 @@ model BomSend {
   status      String   @default("PENDING")             // PENDING | PICKED | ISSUED | CANCELLED
   remarks     String?
   sentBy      String?  @map("sent_by")
-  sentAt      DateTime @default(now()) @map("sent_at")
-  pickedAt    DateTime? @map("picked_at")
-  issuedAt    DateTime? @map("issued_at")
+  sentAt                DateTime  @default(now()) @map("sent_at")
+  pickedAt              DateTime? @map("picked_at")
+  issuedAt              DateTime? @map("issued_at")
+  issuedToSectionAt     DateTime? @map("issued_to_section_at")
+  acknowledgedAt        DateTime? @map("acknowledged_at")
+  acknowledgedBy        String?   @map("acknowledged_by")
   @@map("bom_send")
+}
+
+// ─── BMR MODULE ───────────────────────────────────────────────────────────────
+
+model BmrRecord {
+  id          String        @id @default(cuid())
+  planId      String        @map("plan_id")
+  batchCode   String        @default("") @map("batch_code")
+  productCode String        @default("") @map("product_code")
+  productName String        @map("product_name")
+  diNo        String        @map("di_no")
+  section     String
+  bmrStatus   String        @default("NOT_STARTED") @map("bmr_status")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  sectionA    BmrSectionA?
+  sectionB    BmrSectionB?
+  sectionC    BmrSectionC?
+  sectionD    BmrSectionD?
+  sectionE    BmrSectionE?
+  deviations  BmrDeviation[]
+  samples     BmrSample[]
+  analytics   BmrAnalyticsEvent[]
+  @@map("bmr_record")
+}
+
+model BmrSectionA {
+  id                   String    @id @default(cuid())
+  bmrId                String    @unique @map("bmr_id")
+  bmr                  BmrRecord @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  batchDate            DateTime? @map("batch_date")
+  temperature          Float?
+  tempUnit             String?   @default("C") @map("temp_unit")
+  humidity             Float?
+  weather              String?
+  cfuCountOrdered      String?   @map("cfu_count_ordered")
+  cleaningStatus       String?   @map("cleaning_status")
+  cleaningPhotoUrl     String?   @map("cleaning_photo_url")
+  cleaningStartTime    String?   @map("cleaning_start_time")
+  cleaningEndTime      String?   @map("cleaning_end_time")
+  cleaningEndPhotoUrl  String?   @map("cleaning_end_photo_url")
+  savedAt              DateTime? @map("saved_at")
+  savedBy              String?   @map("saved_by")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  @@map("bmr_section_a")
+}
+
+model BmrSectionB {
+  id                    String             @id @default(cuid())
+  bmrId                 String             @unique @map("bmr_id")
+  bmr                   BmrRecord          @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  microbesPresent       Boolean?           @map("microbes_present")
+  microbeTypes          String[]           @map("microbe_types")
+  noOfMicrobesReceived  Int?               @map("no_of_microbes_received")
+  formOfCulture         String?            @map("form_of_culture")
+  microbesReceivedFrom  String?            @map("microbes_received_from")
+  mcrOrSsf              String?            @map("mcr_or_ssf")
+  fungalCulture         Boolean?           @map("fungal_culture")
+  kojiOrHarvested       String?            @map("koji_or_harvested")
+  microbesReceivedOn    DateTime?          @map("microbes_received_on")
+  microbesReceivedTime  String?            @map("microbes_received_time")
+  totalQtyReceived      Float?             @map("total_qty_received")
+  noOfBags              Int?               @map("no_of_bags")
+  biomassQty            Float?             @map("biomass_qty")
+  initialMoisture       Float?             @map("initial_moisture")
+  techStartTime         String?            @map("tech_start_time")
+  techEndTime           String?            @map("tech_end_time")
+  coFormulantsQty       Float?             @map("co_formulants_qty")
+  techWorkers           Int?               @map("tech_workers")
+  totalTechQty          Float?             @map("total_tech_qty")
+  qtyAfterSieving       Float?             @map("qty_after_sieving")
+  sieving               Boolean?
+  sievingStartTime      String?            @map("sieving_start_time")
+  sievingEndTime        String?            @map("sieving_end_time")
+  meshSize              String?            @map("mesh_size")
+  inchargeName          String?            @map("incharge_name")
+  sampleCollected       Boolean?           @map("sample_collected")
+  sampleProcess         String?            @map("sample_process")
+  sampleId              String?            @map("sample_id")
+  sampleSubmittedOn     DateTime?          @map("sample_submitted_on")
+  savedAt               DateTime?          @map("saved_at")
+  savedBy               String?            @map("saved_by")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  cultureDetails        BmrCultureDetail[]
+  @@map("bmr_section_b")
+}
+
+model BmrCultureDetail {
+  id           String      @id @default(cuid())
+  sectionBId   String      @map("section_b_id")
+  sectionB     BmrSectionB @relation(fields: [sectionBId], references: [id], onDelete: Cascade)
+  cultureName  String?     @map("culture_name")
+  batchNo      String?     @map("batch_no")
+  doiOrDoh     DateTime?   @map("doi_or_doh")
+  cfuPerG      Float?      @map("cfu_per_g")
+  qty          Float?
+  rowOrder     Int         @default(0) @map("row_order")
+  @@map("bmr_culture_detail")
+}
+
+model BmrSectionC {
+  id                    String                 @id @default(cuid())
+  bmrId                 String                 @unique @map("bmr_id")
+  bmr                   BmrRecord              @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  sfgUsed               Boolean?               @map("sfg_used")
+  sfgDiNo               String?                @map("sfg_di_no")
+  sfgDof                DateTime?              @map("sfg_dof")
+  sfgQtyUsed            Float?                 @map("sfg_qty_used")
+  carrier               String?
+  maleWorkers           Int?                   @map("male_workers")
+  femaleWorkers         Int?                   @map("female_workers")
+  equipment             String?
+  totalQty              Float?                 @map("total_qty")
+  rmChargingStartTime   String?                @map("rm_charging_start_time")
+  rmChargingEndTime     String?                @map("rm_charging_end_time")
+  blendingStartTime     String?                @map("blending_start_time")
+  blendingEndTime       String?                @map("blending_end_time")
+  unloadingStartTime    String?                @map("unloading_start_time")
+  unloadingEndTime      String?                @map("unloading_end_time")
+  weightAfterUnloading  Float?                 @map("weight_after_unloading")
+  sieving               Boolean?
+  sievingStartTime      String?                @map("sieving_start_time")
+  sievingEndTime        String?                @map("sieving_end_time")
+  meshSize              String?                @map("mesh_size")
+  weightAfterSieving    Float?                 @map("weight_after_sieving")
+  inchargeName          String?                @map("incharge_name")
+  sampleCollected       Boolean?               @map("sample_collected")
+  sampleProcess         String?                @map("sample_process")
+  sampleId              String?                @map("sample_id")
+  sampleSubmittedOn     DateTime?              @map("sample_submitted_on")
+  savedAt               DateTime?              @map("saved_at")
+  savedBy               String?                @map("saved_by")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  rmChecklist           BmrRmChecklistItem[]
+  @@map("bmr_section_c")
+}
+
+model BmrRmChecklistItem {
+  id          String      @id @default(cuid())
+  sectionCId  String      @map("section_c_id")
+  sectionC    BmrSectionC @relation(fields: [sectionCId], references: [id], onDelete: Cascade)
+  rmCode      String      @map("rm_code")
+  rmName      String      @map("rm_name")
+  stdQty      Float       @map("std_qty")
+  uom         String
+  added       Boolean     @default(false)
+  timeAdded   DateTime?   @map("time_added")
+  remarks     String?
+  rowOrder    Int         @default(0) @map("row_order")
+  @@map("bmr_rm_checklist_item")
+}
+
+model BmrSectionD {
+  id                  String    @id @default(cuid())
+  bmrId               String    @unique @map("bmr_id")
+  bmr                 BmrRecord @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  dateOfPacking       DateTime? @map("date_of_packing")
+  dateOfFormulation   DateTime? @map("date_of_formulation")
+  qtyReceived         Float?    @map("qty_received")
+  maleWorkers         Int?      @map("male_workers")
+  femaleWorkers       Int?      @map("female_workers")
+  typeOfPacking       String?   @map("type_of_packing")
+  primaryPack         String?   @map("primary_pack")
+  secondaryPack       String?   @map("secondary_pack")
+  weightPerUnit       Float?    @map("weight_per_unit")
+  totalQtyPacked      Float?    @map("total_qty_packed")
+  totalUnitsPacked    Int?      @map("total_units_packed")
+  unitsPerCbb         Int?      @map("units_per_cbb")
+  totalOuterPackages  Int?      @map("total_outer_packages")
+  labelType           String?   @map("label_type")
+  labellingStartTime  String?   @map("labelling_start_time")
+  labellingEndTime    String?   @map("labelling_end_time")
+  stretchFilm         Boolean?  @map("stretch_film")
+  sfStartTime         String?   @map("sf_start_time")
+  sfEndTime           String?   @map("sf_end_time")
+  carryStrapping      Boolean?  @map("carry_strapping")
+  csStartTime         String?   @map("cs_start_time")
+  csEndTime           String?   @map("cs_end_time")
+  qtyLeftover         Float?    @map("qty_leftover")
+  leftoverStoredAt    String?   @map("leftover_stored_at")
+  sfgUpdated          Boolean?  @map("sfg_updated")
+  sampleCollected     Boolean?  @map("sample_collected")
+  sampleProcess       String?   @map("sample_process")
+  sampleId            String?   @map("sample_id")
+  sampleSubmittedOn   DateTime? @map("sample_submitted_on")
+  sentToInventoryOn   DateTime? @map("sent_to_inventory_on")
+  handedOverTo        String?   @map("handed_over_to")
+  totalUnitsSent      Int?      @map("total_units_sent")
+  sentTime            String?   @map("sent_time")
+  inchargeName        String?   @map("incharge_name")
+  savedAt             DateTime? @map("saved_at")
+  savedBy             String?   @map("saved_by")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  @@map("bmr_section_d")
+}
+
+model BmrSectionE {
+  id               String           @id @default(cuid())
+  bmrId            String           @unique @map("bmr_id")
+  bmr              BmrRecord        @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  coaNo            String?          @map("coa_no")
+  carrier          String?
+  sentOn           DateTime?        @map("sent_on")
+  sentBy           String?          @map("sent_by")
+  section          String?
+  composition      String?
+  dateOfAnalysis   DateTime?        @map("date_of_analysis")
+  analystName      String?          @map("analyst_name")
+  analyzedBy       String?          @map("analyzed_by")
+  analyzedByDept   String?          @map("analyzed_by_dept")
+  analyzedByDate   DateTime?        @map("analyzed_by_date")
+  checkedBy        String?          @map("checked_by")
+  checkedByDept    String?          @map("checked_by_dept")
+  checkedByDate    DateTime?        @map("checked_by_date")
+  approvedBy       String?          @map("approved_by")
+  approvedByDept   String?          @map("approved_by_dept")
+  approvedByDate   DateTime?        @map("approved_by_date")
+  coaStatus        String           @default("PENDING") @map("coa_status")
+  savedAt          DateTime?        @map("saved_at")
+  savedBy          String?          @map("saved_by")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  parameters       BmrCoaParameter[]
+  @@map("bmr_section_e")
+}
+
+model BmrCoaParameter {
+  id            String      @id @default(cuid())
+  sectionEId    String      @map("section_e_id")
+  sectionE      BmrSectionE @relation(fields: [sectionEId], references: [id], onDelete: Cascade)
+  paramName     String      @map("param_name")
+  specification String?
+  result        String?
+  paramStatus   String?     @map("param_status")
+  rowOrder      Int         @default(0) @map("row_order")
+  isSubRow      Boolean     @default(false) @map("is_sub_row")
+  parentParam   String?     @map("parent_param")
+  @@map("bmr_coa_parameter")
+}
+
+model BmrDeviation {
+  id             String    @id @default(cuid())
+  bmrId          String    @map("bmr_id")
+  bmr            BmrRecord @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  section        String
+  details        String
+  supervisorName String?   @map("supervisor_name")
+  notifiedAt     DateTime  @default(now()) @map("notified_at")
+  notifiedBy     String?   @map("notified_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  @@map("bmr_deviation")
+}
+
+model BmrSample {
+  id               String    @id @default(cuid())
+  bmrId            String    @map("bmr_id")
+  bmr              BmrRecord @relation(fields: [bmrId], references: [id], onDelete: Cascade)
+  sampleId         String    @unique @map("sample_id")
+  section          String
+  process          String?
+  collectedOn      DateTime? @map("collected_on")
+  submittedOn      DateTime? @map("submitted_on")
+  composition      String?
+  sampleStatus     String    @default("COLLECTED") @map("sample_status")
+  sentToQcAt       DateTime? @map("sent_to_qc_at")
+  receivedInQcAt   DateTime? @map("received_in_qc_at")
+  verifiedAt       DateTime? @map("verified_at")
+  verifiedBy       String?   @map("verified_by")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  @@map("bmr_sample")
+}
+
+model BmrAnalyticsEvent {
+  id          String     @id @default(cuid())
+  bmrId       String?    @map("bmr_id")
+  bmr         BmrRecord? @relation(fields: [bmrId], references: [id], onDelete: SetNull)
+  bomId       String?    @map("bom_id")
+  planId      String?    @map("plan_id")
+  eventType   String     @map("event_type")
+  payload     Json?
+  recordedAt  DateTime   @default(now()) @map("recorded_at")
+  @@map("bmr_analytics_event")
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String?   @map("user_id")
+  role       String?
+  section    String?
+  notifType  String    @default("IN_APP") @map("notif_type")
+  title      String
+  message    String
+  read       Boolean   @default(false)
+  link       String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  readAt     DateTime? @map("read_at")
+  @@map("notification")
 }

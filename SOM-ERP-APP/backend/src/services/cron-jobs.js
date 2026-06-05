@@ -154,6 +154,52 @@ export function startCronJobs(fastify) {
     } catch (e) { log.error('[CRON batch_not_started]', e.message) }
   }, 30 * MIN)
 
+  // ── 6. Evening shift reminder: daily at 17:00 IST (11:30 UTC) ───────────────
+  // Finds all plans for TOMORROW and notifies each section incharge
+  scheduleDailyAt(11, 30, async () => {
+    try {
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tStart = new Date(tomorrow); tStart.setHours(0,0,0,0)
+      const tEnd   = new Date(tomorrow); tEnd.setHours(23,59,59,999)
+
+      const plans = await prisma.productionPlan.findMany({
+        where: {
+          plannedDate: { gte: tStart, lte: tEnd },
+          status: { notIn: ['CANCELLED','COMPLETED'] }
+        }
+      })
+
+      if (!plans.length) return
+
+      // Group by section
+      const bySection = {}
+      for (const p of plans) {
+        if (!bySection[p.sectionType]) bySection[p.sectionType] = []
+        bySection[p.sectionType].push(p)
+      }
+
+      for (const [section, sectionPlans] of Object.entries(bySection)) {
+        const summary = sectionPlans.map(p =>
+          `• ${p.productName} | Batch: ${p.batchCode || '—'} | Qty: ${p.totalQty} ${p.uom} | Incharge: ${p.batchIncharge || '—'}`
+        ).join('\n')
+
+        await prisma.notification.create({
+          data: {
+            title:     `Tomorrow's Plan — ${section} Section (${sectionPlans.length} batch${sectionPlans.length>1?'es':''})`,
+            message:   `Plans scheduled for tomorrow in ${section}:\n${summary}\n\nPlease ensure: blender cleaned ✓ · RM collected ✓ · Microbes ready ✓`,
+            role:      'PRODUCTION',
+            section,
+            notifType: 'IN_APP',
+            link:      `/production/planning`,
+          }
+        })
+
+        log.info && log.info(`[CRON evening] Notified ${section} — ${sectionPlans.length} plans tomorrow`)
+      }
+    } catch (e) { log.error('[CRON evening]', e.message) }
+  }, log, 'evening-reminder')
+
   log.info('[CRON] All cron jobs started')
 }
 

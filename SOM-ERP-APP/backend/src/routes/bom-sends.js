@@ -288,6 +288,78 @@ export default async function bomSendRoutes(fastify) {
     return { success: true, data: send }
   })
 
+  // POST /api/bom-sends/:id/issue-to-section
+  // Called by Stores when ALL components are ticked → notifies Section Incharge
+  fastify.post('/:id/issue-to-section', async (req, reply) => {
+    const send = await prisma.bomSend.findUnique({ where: { id: req.params.id } })
+    if (!send) return reply.status(404).send({ success: false, error: 'BOM not found' })
+    if (send.issuedToSectionAt)
+      return reply.status(400).send({ success: false, error: 'Already issued to section' })
+
+    const { issuedBy } = req.body
+
+    const updated = await prisma.bomSend.update({
+      where: { id: req.params.id },
+      data: {
+        issuedToSectionAt: new Date(),
+        status: 'ISSUED',
+        issuedAt: new Date(),
+      }
+    })
+
+    // Notify section incharge + production manager
+    const msg = `All materials for ${send.productName} | DI: ${send.diNo} | Batch Qty: ${send.totalQty} ${send.uom} have been picked and issued to your section by Stores. Please acknowledge receipt.`
+    const roles = ['PRODUCTION', 'ADMIN', 'PRODUCTION_MANAGER']
+    for (const role of roles) {
+      await prisma.notification.create({
+        data: {
+          title:     `BOM Issued to Section — ${send.productName}`,
+          message:   msg,
+          role,
+          section:   send.sectionType || null,
+          notifType: 'IN_APP',
+          link:      `/bom-issuance`,
+        }
+      }).catch(() => {})
+    }
+
+    return { success: true, data: updated }
+  })
+
+  // POST /api/bom-sends/:id/acknowledge
+  // Called by Section Incharge to confirm receipt of materials
+  fastify.post('/:id/acknowledge', async (req, reply) => {
+    const send = await prisma.bomSend.findUnique({ where: { id: req.params.id } })
+    if (!send) return reply.status(404).send({ success: false, error: 'BOM not found' })
+    if (!send.issuedToSectionAt)
+      return reply.status(400).send({ success: false, error: 'BOM has not been issued to section yet' })
+    if (send.acknowledgedAt)
+      return reply.status(400).send({ success: false, error: 'Already acknowledged' })
+
+    const { acknowledgedBy } = req.body
+
+    const updated = await prisma.bomSend.update({
+      where: { id: req.params.id },
+      data: {
+        acknowledgedAt: new Date(),
+        acknowledgedBy: acknowledgedBy || null,
+      }
+    })
+
+    // Notify stores that section has acknowledged
+    await prisma.notification.create({
+      data: {
+        title:     `BOM Acknowledged — ${send.productName}`,
+        message:   `Section has acknowledged receipt of materials for ${send.productName} | DI: ${send.diNo}. Handover loop complete.`,
+        role:      'STORE_MANAGER',
+        notifType: 'IN_APP',
+        link:      `/bom-issuance`,
+      }
+    }).catch(() => {})
+
+    return { success: true, data: updated }
+  })
+
   // DELETE /api/bom-sends/:id
   fastify.delete('/:id', async (req) => {
     await prisma.bomSend.delete({ where: { id: req.params.id } })
