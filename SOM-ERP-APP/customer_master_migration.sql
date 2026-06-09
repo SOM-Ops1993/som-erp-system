@@ -3,6 +3,17 @@
 -- Run in Neon SQL Editor
 -- ============================================================
 
+-- 0. Create notification table (fixes cron error)
+CREATE TABLE IF NOT EXISTS notification (
+  id         TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  type       TEXT NOT NULL,
+  title      TEXT NOT NULL,
+  message    TEXT NOT NULL,
+  is_read    BOOLEAN NOT NULL DEFAULT false,
+  link       TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- 1. Add units_per_cs to sales_order_item (was missing)
 ALTER TABLE sales_order_item
   ADD COLUMN IF NOT EXISTS units_per_cs INTEGER;

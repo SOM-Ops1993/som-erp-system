@@ -1403,7 +1403,3 @@ export default function SalesOrders() {
     </div>
   )
 }
-      )}
-    </div>
-  )
-}
