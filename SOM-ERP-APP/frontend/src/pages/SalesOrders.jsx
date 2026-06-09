@@ -1423,4 +1423,4 @@ export default function SalesOrders() {
       )}
     </div>
   )
-}   
+}
