@@ -2,42 +2,75 @@ import prisma from '../db.js'
 
 export default async function customerProfileRoutes(fastify) {
 
-  // GET /api/customer-profiles — all profiles (for dropdown)
-  fastify.get('/', async (req, reply) => {
+  // GET /api/customer-profiles — all customers
+  fastify.get('/', async (req) => {
     const profiles = await prisma.customerProfile.findMany({
-      orderBy: [{ orderCount: 'desc' }, { customerName: 'asc' }],
+      orderBy: { customerName: 'asc' },
     })
     return { success: true, data: profiles }
   })
 
-  // POST /api/customer-profiles/upsert — called when a SO is saved
-  // Updates profile from real order data (most trusted source)
+  // GET /api/customer-profiles/:id
+  fastify.get('/:id', async (req, reply) => {
+    const profile = await prisma.customerProfile.findUnique({ where: { id: req.params.id } })
+    if (!profile) return reply.status(404).send({ success: false, error: 'Not found' })
+    return { success: true, data: profile }
+  })
+
+  // POST /api/customer-profiles — create new customer (manual from master)
+  fastify.post('/', async (req, reply) => {
+    const { customerName, company, orderType } = req.body
+    if (!customerName?.trim())
+      return reply.status(400).send({ success: false, error: 'customerName required' })
+    const name = customerName.trim().toUpperCase()
+    const existing = await prisma.customerProfile.findUnique({ where: { customerName: name } })
+    if (existing)
+      return reply.status(409).send({ success: false, error: 'Customer already exists' })
+    const profile = await prisma.customerProfile.create({
+      data: { customerName: name, company: company || '', orderType: orderType || 'DOMESTIC', orderCount: 0 }
+    })
+    return { success: true, data: profile }
+  })
+
+  // PUT /api/customer-profiles/:id — update
+  fastify.put('/:id', async (req, reply) => {
+    const existing = await prisma.customerProfile.findUnique({ where: { id: req.params.id } })
+    if (!existing) return reply.status(404).send({ success: false, error: 'Not found' })
+    const { customerName, company, orderType } = req.body
+    const updated = await prisma.customerProfile.update({
+      where: { id: req.params.id },
+      data: {
+        customerName: customerName ? customerName.trim().toUpperCase() : existing.customerName,
+        company:   company   ?? existing.company,
+        orderType: orderType ?? existing.orderType,
+      }
+    })
+    return { success: true, data: updated }
+  })
+
+  // DELETE /api/customer-profiles/:id
+  fastify.delete('/:id', async (req, reply) => {
+    const existing = await prisma.customerProfile.findUnique({ where: { id: req.params.id } })
+    if (!existing) return reply.status(404).send({ success: false, error: 'Not found' })
+    await prisma.customerProfile.delete({ where: { id: req.params.id } })
+    return { success: true }
+  })
+
+  // POST /api/customer-profiles/upsert — auto-learn when SO is saved
   fastify.post('/upsert', async (req, reply) => {
     const { customerName, company, orderType } = req.body
-    if (!customerName?.trim()) return reply.status(400).send({ success: false, error: 'customerName required' })
-
-    const existing = await prisma.customerProfile.findUnique({
-      where: { customerName: customerName.trim().toUpperCase() }
-    })
-
+    if (!customerName?.trim())
+      return reply.status(400).send({ success: false, error: 'customerName required' })
+    const name = customerName.trim().toUpperCase()
+    const existing = await prisma.customerProfile.findUnique({ where: { customerName: name } })
     if (existing) {
-      // Increment count and update fields (real order data wins over Excel seed)
       await prisma.customerProfile.update({
-        where: { customerName: customerName.trim().toUpperCase() },
-        data: {
-          company:    company   || existing.company,
-          orderType:  orderType || existing.orderType,
-          orderCount: { increment: 1 },
-        }
+        where: { customerName: name },
+        data: { company: company || existing.company, orderType: orderType || existing.orderType, orderCount: { increment: 1 } }
       })
     } else {
       await prisma.customerProfile.create({
-        data: {
-          customerName: customerName.trim().toUpperCase(),
-          company:   company   || '',
-          orderType: orderType || 'DOMESTIC',
-          orderCount: 1,
-        }
+        data: { customerName: name, company: company || '', orderType: orderType || 'DOMESTIC', orderCount: 1 }
       })
     }
     return { success: true }
@@ -45,16 +78,15 @@ export default async function customerProfileRoutes(fastify) {
 
   // POST /api/customer-profiles/seed — bulk seed from Excel import
   fastify.post('/seed', async (req, reply) => {
-    const { profiles } = req.body   // [{ customerName, company, orderType, orderCount }]
-    if (!Array.isArray(profiles)) return reply.status(400).send({ success: false, error: 'profiles array required' })
-
+    const { profiles } = req.body
+    if (!Array.isArray(profiles))
+      return reply.status(400).send({ success: false, error: 'profiles array required' })
     let created = 0, updated = 0
     for (const p of profiles) {
       if (!p.customerName?.trim()) continue
       const name = p.customerName.trim().toUpperCase()
       const existing = await prisma.customerProfile.findUnique({ where: { customerName: name } })
       if (existing) {
-        // Only update if seed has more data points (i.e. real orders override Excel)
         if (p.orderCount > existing.orderCount) {
           await prisma.customerProfile.update({
             where: { customerName: name },

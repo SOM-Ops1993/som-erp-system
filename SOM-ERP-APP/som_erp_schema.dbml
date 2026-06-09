@@ -1,0 +1,784 @@
+// ============================================================
+// SOM PHYTO PHARMA ERP — COMPLETE DATABASE SCHEMA
+// Paste into https://dbdiagram.io
+// ============================================================
+
+// ── COLOUR GROUPS (use dbdiagram.io Table Groups) ────────────────────────────
+// Group 1 — MASTERS (slate)
+// Group 2 — SALES & PLANNING (blue/purple)
+// Group 3 — STORES / BOM (amber)
+// Group 4 — BMR PRODUCTION (teal)
+// Group 5 — QC / COA (rose)
+// Group 6 — INFRASTRUCTURE (navy)
+// Group 7 — NOTIFICATIONS (green)
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 1 — MASTER DATA
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table rm_master [note: 'Raw material item master — source of all RM codes'] {
+  item_code      varchar   [pk, note: 'e.g. RM-001']
+  item_name      varchar   [unique, not null]
+  uom            varchar   [not null, note: 'KG / LTR / GM']
+  tracking_type  varchar   [not null, default: 'PACK', note: 'PACK | BULK']
+  created_at     timestamp [default: `now()`]
+  updated_at     timestamp
+}
+
+Table product_master [note: 'Finished product master — inhouse product codes'] {
+  product_code   varchar   [pk, note: 'e.g. PROD-001']
+  product_name   varchar   [unique, not null]
+  plant          varchar   [default: '']
+  created_at     timestamp [default: `now()`]
+  updated_at     timestamp
+}
+
+Table equipment_master [note: 'Equipment / blender master per section'] {
+  equip_id       varchar   [pk]
+  equip_name     varchar   [unique, not null]
+  working_volume float     [note: 'Litres — used to auto-calc no. of cycles']
+  operation      varchar
+  plant          varchar   [note: 'POWDER | NANO | LIQUID | etc.']
+  created_at     timestamp [default: `now()`]
+}
+
+Table recipe_db [note: 'Bill of Materials: materials required per KG of product'] {
+  id             varchar   [pk]
+  product_code   varchar   [not null, ref: > product_master.product_code]
+  product_name   varchar
+  rm_code        varchar   [not null, ref: > rm_master.item_code]
+  rm_name        varchar
+  qty_per_unit   float     [not null, note: 'KG of RM per KG of finished product']
+  uom            varchar
+  role_type      varchar   [default: 'INGREDIENT', note: 'ACTIVE | CARRIER | EXCIPIENT | PACKING']
+
+  indexes {
+    (product_code, rm_code) [unique]
+  }
+}
+
+Table employee_master [note: '7 roles: ADMIN | PLANNING | PRODUCTION | QC | STORES | DISPATCH | ACCOUNTS'] {
+  id             varchar   [pk]
+  emp_code       varchar   [unique]
+  name           varchar   [not null]
+  email          varchar   [unique]
+  phone          varchar
+  role           varchar   [not null]
+  section        varchar   [note: 'POWDER | NANO | BOTANICAL | LIQUID | GRANULES']
+  is_active      boolean   [default: true]
+  created_at     timestamp [default: `now()`]
+  updated_at     timestamp
+}
+
+Table role_permission [note: 'Page-level access control per role'] {
+  id             varchar   [pk]
+  role           varchar   [not null]
+  page_path      varchar   [not null]
+  page_label     varchar
+
+  indexes {
+    (role, page_path) [unique]
+  }
+}
+
+Table customer_profile [note: 'Auto-learned: remembers company + order type per customer'] {
+  id             varchar   [pk]
+  customer_name  varchar   [unique, not null]
+  company        varchar
+  order_type     varchar   [default: 'DOMESTIC']
+  order_count    integer   [default: 1]
+  updated_at     timestamp
+}
+
+Table customer_product_profile [note: 'Deep memory: auto-fills all Sales Order fields per customer+product'] {
+  id             varchar   [pk]
+  customer_name  varchar   [not null]
+  product_name   varchar   [not null, note: 'Customer-facing product name (primary key)']
+  product_code   varchar   [note: 'Inhouse product code']
+  inhouse_name   varchar
+  active_specs   varchar
+  carrier        varchar
+  section_name   varchar
+  unit_qty       float
+  unit_uom       varchar
+  unit_pack_type varchar
+  primary_pack   varchar   [note: 'LD Pouch | AL Pouch | Bottle etc.']
+  secondary_pack varchar   [note: 'B-CBB | W-CBB | Drum etc.']
+  units_per_cs   integer
+  total_uom      varchar   [default: 'KG']
+  label_type     varchar
+  mrp            float
+  last_batch_no  varchar   [note: 'Used to suggest next batch number']
+  shelf_life_days integer  [note: 'Learned from past orders (expDate - mfgDate)']
+  order_count    integer   [default: 1]
+  last_ordered_at timestamp
+
+  indexes {
+    (customer_name, product_name) [unique]
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 2 — SALES & PLANNING
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table sales_order [note: 'Header: one per dispatch instruction (DI)'] {
+  id                       varchar   [pk]
+  so_id                    varchar   [unique, note: 'Auto: SO-2026-0001']
+  company                  varchar   [not null, note: 'SOM | DVS | AL-IPL | AL-LLC | AL-PTE']
+  di_no                    varchar   [not null]
+  customer_name            varchar   [not null]
+  order_type               varchar   [not null, note: 'DOMESTIC | EXPORT | ECOM | SAMPLE']
+  order_received_date      timestamp
+  priority                 varchar   [default: 'MODERATE', note: 'MODERATE | URGENT | VERY_URGENT']
+  estimated_dispatch_date  timestamp
+  invoice_no               varchar
+  invoice_date             timestamp
+  transport_name           varchar
+  sales_staff              varchar
+  dispatched_by            varchar
+  remarks                  varchar
+  created_at               timestamp [default: `now()`]
+  updated_at               timestamp
+}
+
+Table sales_order_item [note: 'Line items: one row per product per DI'] {
+  id                    varchar   [pk]
+  sales_order_id        varchar   [not null, ref: > sales_order.id]
+  line_no               integer
+  customer_product_name varchar   [not null]
+  inhouse_product_name  varchar
+  inhouse_product_code  varchar
+  active_specs          varchar
+  active_ingredient     varchar
+  carrier               varchar
+  batch_no              varchar
+  section_name          varchar   [note: 'NANO | BOTANICAL | LIQUID | POWDER | GRANULES']
+  total_qty             float     [not null]
+  total_uom             varchar   [default: 'KG']
+  unit_qty              float
+  unit_uom              varchar
+  unit_pack_type        varchar   [note: 'Primary packing: Pouch, Bottle etc.']
+  packing_type          varchar   [note: 'Secondary packing: Carton, Drum etc.']
+  total_cs              integer   [note: 'Total number of final outer packs']
+  label_type            varchar   [note: 'CUSTOMER | COMPUTER | RETAIL | PACKING_SLIP']
+  mrp                   float
+  mfg_date              timestamp
+  exp_date              timestamp
+  status                varchar   [default: 'PENDING']
+  created_at            timestamp [default: `now()`]
+  updated_at            timestamp
+}
+
+Table so_sequence [note: 'Auto-increment counter for SO IDs per year'] {
+  year  integer [pk]
+  seq   integer [default: 0]
+}
+
+Table production_plan [note: 'One plan per batch — created from Sales Order item'] {
+  id                 varchar   [pk]
+  plan_id            varchar   [unique, note: 'Auto: PP-2026-0001']
+  sales_order_id     varchar   [ref: > sales_order.id]
+  sales_order_item_id varchar  [ref: > sales_order_item.id]
+  di_no              varchar   [not null]
+  customer_name      varchar
+  section_type       varchar   [not null, note: 'NANO | BOTANICAL | LIQUID | POWDER | GRANULES']
+  planned_date       timestamp [not null]
+  shift              varchar   [note: 'A | G | B | C']
+  batch_incharge     varchar
+  no_of_cycles       integer
+  cycle_batch_size   float
+  equipment          varchar
+  location           varchar
+  product_code       varchar   [ref: > product_master.product_code]
+  product_name       varchar   [not null]
+  batch_code         varchar
+  total_qty          float     [not null]
+  uom                varchar   [default: 'KG']
+  carrier            varchar
+  specs              varchar
+  // Packing fields
+  unit_pack_qty      float
+  no_of_units        integer
+  pp1                varchar   [note: 'Primary Pack']
+  pp2                varchar   [note: 'Primary Pack 2']
+  sp1                varchar   [note: 'Secondary Pack']
+  no_of_sp           integer
+  labels             varchar
+  packing_spec       varchar
+  // Workers
+  female_workers     integer
+  male_workers       integer
+  // Status
+  status             varchar   [default: 'DRAFT', note: 'DRAFT|PLANNED|RM_READY|ISSUED|IN_PROCESS|AWAITING_QC|QC_PASSED|COMPLETED|CANCELLED']
+  rm_check_status    varchar   [note: 'GREEN | AMBER | RED — set at planning time']
+  rm_check_details   varchar   [note: 'JSON: [{rmCode, required, available, status}]']
+  remarks            varchar
+  created_at         timestamp [default: `now()`]
+  updated_at         timestamp
+}
+
+Table plan_sequence [note: 'Auto-increment counter for Plan IDs per year'] {
+  year integer [pk]
+  seq  integer [default: 0]
+}
+
+Table planner_log [note: 'Audit log of every plan engine run'] {
+  id               varchar   [pk]
+  run_at           timestamp [default: `now()`]
+  trigger          varchar   [note: 'MANUAL | SCHEDULED']
+  plans_created    integer   [default: 0]
+  orders_processed integer   [default: 0]
+  errors           varchar
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 3 — STORES / BOM ISSUANCE
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table bom_send [note: 'BOM request from Planning → Stores. FORMULATION + PACKING BOMs created separately.'] {
+  id                   varchar   [pk]
+  send_id              varchar   [unique, note: 'Auto: BOM-2605-001']
+  indent_id            varchar
+  plan_id              varchar   [not null, ref: > production_plan.id]
+  product_code         varchar
+  product_name         varchar   [not null]
+  batch_no             varchar
+  di_no                varchar   [not null]
+  section_type         varchar
+  bom_type             varchar   [not null, note: 'FORMULATION | PACKING']
+  total_qty            float     [not null]
+  uom                  varchar   [default: 'KG']
+  status               varchar   [default: 'PENDING', note: 'PENDING|PICKED|ISSUED|CANCELLED']
+  remarks              varchar
+  sent_by              varchar
+  sent_at              timestamp [default: `now()`]
+  picked_at            timestamp
+  issued_at            timestamp
+  issued_to_section_at timestamp [note: 'When stores clicks Issue to Section']
+  acknowledged_at      timestamp [note: 'When section incharge acknowledges receipt']
+  acknowledged_by      varchar
+}
+
+Table print_master [note: 'Pack label registry — one row per bag/pack generated'] {
+  pack_id       varchar   [pk, note: 'e.g. RM-001-LOT001-B01']
+  item_code     varchar   [not null, ref: > rm_master.item_code]
+  item_name     varchar
+  lot_no        varchar   [not null]
+  bag_no        integer   [not null]
+  pack_qty      float     [not null]
+  uom           varchar
+  supplier      varchar
+  invoice_no    varchar
+  received_date timestamp
+  status        varchar   [default: 'AWAITING_INWARD']
+  created_at    timestamp [default: `now()`]
+
+  indexes {
+    (item_code, lot_no, bag_no) [unique]
+  }
+}
+
+Table inward_session [note: 'Inward scanning session — groups bags being inwarded together'] {
+  session_id      varchar   [pk]
+  item_code       varchar   [not null, ref: > rm_master.item_code]
+  lot_no          varchar
+  warehouse       varchar
+  expected_bags   integer
+  scanned_pack_ids varchar  [note: 'JSON array of scanned packIds']
+  status          varchar   [default: 'ACTIVE']
+  created_at      timestamp [default: `now()`]
+  updated_at      timestamp
+}
+
+Table inward [note: 'Permanent inward record — one row per bag scanned in'] {
+  id          varchar   [pk]
+  pack_id     varchar   [not null, ref: > print_master.pack_id]
+  item_code   varchar   [not null, ref: > rm_master.item_code]
+  item_name   varchar
+  lot_no      varchar
+  bag_no      integer
+  qty         float
+  inward_time timestamp [default: `now()`]
+  warehouse   varchar
+}
+
+Table pack_balance [note: 'Live remaining qty per pack — decremented by BOM Issuance'] {
+  pack_id       varchar   [pk, ref: > print_master.pack_id]
+  item_code     varchar   [not null, ref: > rm_master.item_code]
+  total_qty     float     [not null]
+  remaining_qty float     [not null, note: 'Decremented on every BOM issuance']
+}
+
+Table stock_ledger [note: 'Every stock movement — complete audit trail'] {
+  id               varchar   [pk]
+  item_code        varchar   [not null, ref: > rm_master.item_code]
+  source_id        varchar   [not null, note: 'packId or locationId']
+  transaction_type varchar   [not null, note: 'INWARD | BOM_ISSUANCE | STOCK_ADJUSTMENT | BULK_OUTWARD']
+  in_qty           float     [default: 0]
+  out_qty          float     [default: 0]
+  balance          float     [not null]
+  reference        varchar   [note: 'sendId | batchCode | reason']
+  timestamp        timestamp [default: `now()`]
+}
+
+Table outward [note: 'Legacy outward record (indent-based issuance)'] {
+  id          varchar   [pk]
+  indent_id   varchar
+  source_id   varchar
+  source_type varchar
+  rm_code     varchar
+  qty_issued  float
+  remarks     varchar
+  timestamp   timestamp [default: `now()`]
+}
+
+Table indent_master [note: 'Production indent — materials required for a batch'] {
+  indent_id        varchar   [pk]
+  product_code     varchar   [ref: > product_master.product_code]
+  product_name     varchar
+  batch_size       float
+  batch_no         varchar
+  di_no            varchar
+  plant            varchar
+  equipment        varchar
+  status           varchar   [default: 'OPEN', note: 'OPEN | PENDING_STOCK | CLOSED']
+  created_at       timestamp [default: `now()`]
+}
+
+Table indent_details [note: 'Per-material line in an indent'] {
+  id           varchar   [pk]
+  indent_id    varchar   [not null, ref: > indent_master.indent_id]
+  rm_code      varchar   [not null, ref: > rm_master.item_code]
+  rm_name      varchar
+  required_qty float     [not null]
+  issued_qty   float     [default: 0]
+  balance_qty  float     [not null]
+}
+
+Table container_master [note: 'Bulk container holding partial bag contents'] {
+  container_id varchar [pk]
+  item_code    varchar [unique, ref: > rm_master.item_code]
+  item_name    varchar
+  capacity     float
+  current_qty  float   [default: 0]
+  uom          varchar
+}
+
+Table lot_sequence [note: 'Auto-increment lot numbers per item per year'] {
+  item_code varchar [pk]
+  year      integer [pk]
+  seq       integer [default: 0]
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 4 — BULK STORAGE
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table bulk_location [note: 'Named storage location (rack/shelf) for bulk materials'] {
+  location_id   varchar   [pk, note: 'e.g. LOC-001']
+  location_name varchar
+  item_code     varchar   [not null, ref: > rm_master.item_code]
+  item_name     varchar
+  uom           varchar   [default: 'KG']
+  created_at    timestamp [default: `now()`]
+}
+
+Table bulk_lot_entry [note: 'One lot received into a bulk location'] {
+  id            varchar   [pk]
+  location_id   varchar   [not null, ref: > bulk_location.location_id]
+  item_code     varchar   [ref: > rm_master.item_code]
+  lot_no        varchar
+  supplier      varchar
+  invoice_no    varchar
+  received_date timestamp
+  received_qty  float
+  remaining_qty float
+  uom           varchar   [default: 'KG']
+  status        varchar   [default: 'ACTIVE', note: 'ACTIVE | EXHAUSTED']
+  created_at    timestamp [default: `now()`]
+  updated_at    timestamp
+}
+
+Table bulk_lot_sequence [note: 'Lot number counter for bulk items'] {
+  item_code varchar [pk]
+  year      integer [pk]
+  seq       integer [default: 0]
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 5 — BMR PRODUCTION (Digital Batch Manufacturing Record)
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table bmr_record [note: 'Master BMR record — one per production plan'] {
+  id           varchar   [pk]
+  plan_id      varchar   [not null, ref: > production_plan.id]
+  batch_code   varchar
+  product_code varchar   [ref: > product_master.product_code]
+  product_name varchar   [not null]
+  di_no        varchar   [not null]
+  section      varchar   [not null, note: 'POWDER | NANO | BOTANICAL | LIQUID | GRANULES']
+  bmr_status   varchar   [default: 'NOT_STARTED', note: 'NOT_STARTED|IN_PROGRESS|COMPLETED|VERIFIED']
+  created_at   timestamp [default: `now()`]
+  updated_at   timestamp
+}
+
+Table bmr_section_a [note: 'Sec A: Batch header — environment, temperature, cleaning status'] {
+  id                    varchar   [pk]
+  bmr_id                varchar   [unique, not null, ref: > bmr_record.id]
+  batch_date            date
+  temperature           float
+  temp_unit             varchar   [default: 'C']
+  humidity              float
+  weather               varchar
+  cfu_count_ordered     varchar
+  cleaning_status       varchar   [note: 'CLEAN | NOT_CLEAN']
+  cleaning_photo_url    varchar
+  cleaning_start_time   varchar
+  cleaning_end_time     varchar
+  cleaning_end_photo_url varchar
+  saved_at              timestamp
+  saved_by              varchar
+  updated_at            timestamp
+}
+
+Table bmr_section_b [note: 'Sec B: Technical — microbial culture details and technical process'] {
+  id                    varchar   [pk]
+  bmr_id                varchar   [unique, not null, ref: > bmr_record.id]
+  microbes_present      boolean
+  microbe_types         varchar   [note: 'JSON array: [BIOMASS, SDP, BROTH]']
+  // Culture info
+  no_of_microbes_received integer
+  form_of_culture       varchar   [note: 'BIOMASS | SPRAY_DRIED | BROTH']
+  microbes_received_from varchar
+  mcr_or_ssf            varchar   [note: 'MCR | SSF']
+  fungal_culture        boolean
+  koji_or_harvested     varchar   [note: 'KOJI | HARVESTED']
+  microbes_received_on  date
+  microbes_received_time varchar
+  total_qty_received    float
+  no_of_bags            integer
+  // Technical process
+  biomass_qty           float
+  initial_moisture      float
+  tech_start_time       varchar
+  tech_end_time         varchar
+  co_formulants_qty     float
+  tech_workers          integer
+  total_tech_qty        float
+  qty_after_sieving     float
+  sieving               boolean
+  sieving_start_time    varchar
+  sieving_end_time      varchar
+  mesh_size             varchar
+  incharge_name         varchar
+  // QC Sampling
+  sample_collected      boolean
+  sample_process        varchar
+  sample_id             varchar
+  sample_submitted_on   date
+  saved_at              timestamp
+  saved_by              varchar
+  updated_at            timestamp
+}
+
+Table bmr_culture_detail [note: 'Repeating culture rows in Sec B (up to 6)'] {
+  id           varchar   [pk]
+  section_b_id varchar   [not null, ref: > bmr_section_b.id]
+  culture_name varchar
+  batch_no     varchar
+  doi_or_doh   date      [note: 'Date of Inoculation / Date of Harvest']
+  cfu_per_g    float
+  qty          float
+  row_order    integer   [default: 0]
+}
+
+Table bmr_section_c [note: 'Sec C: Formulation — SFG, RM checklist, blending, unloading'] {
+  id                     varchar   [pk]
+  bmr_id                 varchar   [unique, not null, ref: > bmr_record.id]
+  sfg_used               boolean
+  sfg_di_no              varchar
+  sfg_dof                date
+  sfg_qty_used           float
+  carrier                varchar
+  male_workers           integer
+  female_workers         integer
+  equipment              varchar   [ref: > equipment_master.equip_name]
+  total_qty              float
+  rm_charging_start_time varchar
+  rm_charging_end_time   varchar
+  blending_start_time    varchar
+  blending_end_time      varchar
+  unloading_start_time   varchar
+  unloading_end_time     varchar
+  weight_after_unloading float
+  sieving                boolean
+  sieving_start_time     varchar
+  sieving_end_time       varchar
+  mesh_size              varchar
+  weight_after_sieving   float
+  incharge_name          varchar
+  // QC Sampling
+  sample_collected       boolean
+  sample_process         varchar
+  sample_id              varchar
+  sample_submitted_on    date
+  saved_at               timestamp
+  saved_by               varchar
+  updated_at             timestamp
+}
+
+Table bmr_rm_checklist_item [note: 'Auto-populated from BOM recipe — operator ticks each as added'] {
+  id           varchar   [pk]
+  section_c_id varchar   [not null, ref: > bmr_section_c.id]
+  rm_code      varchar   [not null, ref: > rm_master.item_code]
+  rm_name      varchar
+  std_qty      float     [not null, note: 'qty_per_unit × batch_size']
+  uom          varchar
+  added        boolean   [default: false]
+  time_added   timestamp [note: 'Auto-stamped when operator ticks the checkbox']
+  remarks      varchar
+  row_order    integer   [default: 0]
+}
+
+Table bmr_section_d [note: 'Sec D: Packing — can be filled later / different shift'] {
+  id                   varchar   [pk]
+  bmr_id               varchar   [unique, not null, ref: > bmr_record.id]
+  date_of_packing      date
+  date_of_formulation  date
+  qty_received         float
+  male_workers         integer
+  female_workers       integer
+  type_of_packing      varchar
+  primary_pack         varchar
+  secondary_pack       varchar
+  weight_per_unit      float
+  total_qty_packed     float
+  total_units_packed   integer
+  units_per_cbb        integer
+  total_outer_packages integer
+  label_type           varchar   [note: 'PACKING_SLIP | COMPUTER | CUSTOMER']
+  labelling_start_time varchar
+  labelling_end_time   varchar
+  stretch_film         boolean
+  sf_start_time        varchar
+  sf_end_time          varchar
+  carry_strapping      boolean
+  cs_start_time        varchar
+  cs_end_time          varchar
+  qty_leftover         float
+  leftover_stored_at   varchar
+  sfg_updated          boolean
+  // Sampling
+  sample_collected     boolean
+  sample_process       varchar
+  sample_id            varchar
+  sample_submitted_on  date
+  sent_to_inventory_on date
+  handed_over_to       varchar
+  total_units_sent     integer
+  sent_time            varchar
+  incharge_name        varchar
+  saved_at             timestamp
+  saved_by             varchar
+  updated_at           timestamp
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 6 — QC & COA
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table bmr_section_e [note: 'Sec E: COA — QC team fills this; separate permission'] {
+  id               varchar   [pk]
+  bmr_id           varchar   [unique, not null, ref: > bmr_record.id]
+  coa_no           varchar
+  carrier          varchar
+  sent_on          date
+  sent_by          varchar
+  section          varchar
+  composition      varchar   [note: 'Free text entered by incharge before sending to QC']
+  date_of_analysis date
+  analyst_name     varchar
+  // Sign-off
+  analyzed_by      varchar
+  analyzed_by_dept varchar
+  analyzed_by_date date
+  checked_by       varchar
+  checked_by_dept  varchar
+  checked_by_date  date
+  approved_by      varchar
+  approved_by_dept varchar
+  approved_by_date date
+  coa_status       varchar   [default: 'PENDING', note: 'PENDING | SUBMITTED | APPROVED']
+  saved_at         timestamp
+  saved_by         varchar
+  updated_at       timestamp
+}
+
+Table bmr_coa_parameter [note: 'COA parameter rows — 20+ parameters per batch'] {
+  id             varchar   [pk]
+  section_e_id   varchar   [not null, ref: > bmr_section_e.id]
+  param_name     varchar   [not null, note: 'e.g. CFU Assay, Moisture, pH, Heavy Metals']
+  specification  varchar
+  result         varchar
+  param_status   varchar   [note: 'PASS | FAIL | ABSENT']
+  row_order      integer   [default: 0]
+  is_sub_row     boolean   [default: false, note: 'true for sub-rows like Arsenic under Heavy Metals']
+  parent_param   varchar   [note: 'e.g. Heavy Metals']
+}
+
+Table bmr_sample [note: 'Sample lifecycle: COLLECTED → SENT_TO_QC → RECEIVED_IN_QC → VERIFIED'] {
+  id               varchar   [pk]
+  bmr_id           varchar   [not null, ref: > bmr_record.id]
+  sample_id        varchar   [unique, not null, note: 'Format: WP260502-FRM-001']
+  section          varchar   [not null, note: 'FRM | PKG | TECH']
+  process          varchar
+  collected_on     date
+  submitted_on     date
+  composition      varchar   [note: 'Filled by incharge before sending to QC']
+  sample_status    varchar   [default: 'COLLECTED']
+  sent_to_qc_at    timestamp
+  received_in_qc_at timestamp
+  verified_at      timestamp
+  verified_by      varchar
+  created_at       timestamp [default: `now()`]
+}
+
+Table bmr_deviation [note: 'Deviations flagged during production — triggers multi-role notification'] {
+  id              varchar   [pk]
+  bmr_id          varchar   [not null, ref: > bmr_record.id]
+  section         varchar   [not null, note: 'A | B | C | D']
+  details         varchar   [not null]
+  supervisor_name varchar
+  notified_at     timestamp [default: `now()`]
+  notified_by     varchar
+  created_at      timestamp [default: `now()`]
+}
+
+Table bmr_analytics_event [note: 'Silent background capture — no UI; feeds future analytics dashboard'] {
+  id          varchar   [pk]
+  bmr_id      varchar   [ref: > bmr_record.id]
+  bom_id      varchar
+  plan_id     varchar
+  event_type  varchar   [not null, note: 'BMR_CREATED | FIRST_RM_ISSUED | BMR_FORMULATION_STARTED | etc.']
+  payload     varchar   [note: 'JSON: timestamps, quantities, who did what']
+  recorded_at timestamp [default: `now()`]
+}
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GROUP 7 — INFRASTRUCTURE
+// ══════════════════════════════════════════════════════════════════════════════
+
+Table sfg_master [note: 'Semi-finished goods tracker — updated when packing is done'] {
+  sfg_id         varchar   [pk]
+  indent_id      varchar
+  product_code   varchar   [ref: > product_master.product_code]
+  product_name   varchar
+  target_qty     float
+  formulated_qty float     [default: 0]
+  sfg_qty        float     [default: 0]
+  packed_qty     float     [default: 0]
+  status         varchar   [default: 'OPEN']
+  remarks        varchar
+  created_at     timestamp [default: `now()`]
+  updated_at     timestamp
+}
+
+Table notification [note: 'In-app notification bell — also triggers email + WhatsApp'] {
+  id          varchar   [pk]
+  user_id     varchar
+  role        varchar   [note: 'Broadcast to all users with this role']
+  section     varchar   [note: 'Scoped to a section if set']
+  notif_type  varchar   [default: 'IN_APP', note: 'IN_APP | EMAIL | WHATSAPP']
+  title       varchar   [not null]
+  message     varchar   [not null]
+  read        boolean   [default: false]
+  link        varchar   [note: 'Deep link to relevant ERP page']
+  created_at  timestamp [default: `now()`]
+  read_at     timestamp
+}
+
+Table sheet_sync_log [note: 'Google Sheets import audit log'] {
+  id         varchar   [pk]
+  trigger    varchar   [default: 'WEBHOOK', note: 'WEBHOOK | MANUAL | SCHEDULED']
+  rows_in    integer   [default: 0]
+  imported   integer   [default: 0]
+  skipped    integer   [default: 0]
+  errors     varchar   [note: 'JSON array of row-level errors']
+  created_at timestamp [default: `now()`]
+}
+
+
+// ── TABLE GROUPS (for visual clustering in dbdiagram.io) ─────────────────────
+
+TableGroup masters {
+  rm_master
+  product_master
+  equipment_master
+  recipe_db
+  employee_master
+  role_permission
+  customer_profile
+  customer_product_profile
+}
+
+TableGroup sales_planning {
+  sales_order
+  sales_order_item
+  so_sequence
+  production_plan
+  plan_sequence
+  planner_log
+}
+
+TableGroup stores_bom {
+  bom_send
+  print_master
+  inward_session
+  inward
+  pack_balance
+  stock_ledger
+  outward
+  indent_master
+  indent_details
+  container_master
+  lot_sequence
+}
+
+TableGroup bulk_storage {
+  bulk_location
+  bulk_lot_entry
+  bulk_lot_sequence
+}
+
+TableGroup bmr_production {
+  bmr_record
+  bmr_section_a
+  bmr_section_b
+  bmr_culture_detail
+  bmr_section_c
+  bmr_rm_checklist_item
+  bmr_section_d
+  bmr_analytics_event
+  bmr_deviation
+}
+
+TableGroup qc_coa {
+  bmr_section_e
+  bmr_coa_parameter
+  bmr_sample
+}
+
+TableGroup infrastructure {
+  sfg_master
+  notification
+  sheet_sync_log
+}

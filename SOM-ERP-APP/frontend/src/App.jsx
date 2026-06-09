@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocati
 import EmployeeMaster  from './pages/EmployeeMaster.jsx'
 import SalesOrdersPage from './pages/SalesOrders.jsx'
 import PlanningPage    from './pages/Planning.jsx'
+import CustomerMaster  from './pages/CustomerMaster.jsx'
 
 // ── Legacy app pages (untouched) ─────────────────────────────────────────────
 import Stock           from './pages/Stock.jsx'
@@ -54,6 +55,7 @@ const LEGACY_NAV = [
     { to: '/employee-master',  label: 'Employee Data',      icon: '👥' },
     { to: '/recipe',           label: 'Recipe / BOM',       icon: '≡' },
     { to: '/microbes-master',  label: 'Microbes Master',    icon: '🦠' },
+    { to: '/customer-master',  label: 'Customer Master',    icon: '👤' },
   ]},
   { group: 'INVENTORY / MATERIALS', items: [
     { to: '/print-master',      label: 'Print Master',        icon: '▣' },
@@ -225,6 +227,7 @@ function LegacyLayout() {
           <Route path="/production"       element={<Production />} />
           <Route path="/location-master"  element={<LocationMaster />} />
           <Route path="/employee-master"  element={<EmployeeMaster />} />
+          <Route path="/customer-master"  element={<CustomerMaster />} />
           <Route path="/sales-orders"     element={<SalesOrdersPage />} />
           <Route path="/planning"         element={<PlanningPage />} />
           {/* Quality Control — placeholder until pages are built */}

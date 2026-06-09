@@ -475,7 +475,8 @@ model SalesOrderItem {
   unitUom             String?    @map("unit_uom")
   unitPackType        String?    @map("unit_pack_type")           // Primary packing: e.g. Pouch, Bottle, Sachet
   packingType         String?    @map("packing_type")             // Secondary packing: Cartons | OMB30 | OMB50 | etc.
-  totalCS             Int?       @map("total_cs")                 // Total no. of final packs
+  unitsPerCS          Int?       @map("units_per_cs")             // Units per secondary pack (e.g. 10 pouches per carton)
+  totalCS             Int?       @map("total_cs")                 // Total no. of secondary packs (auto-calc)
   labelType           String?    @map("label_type")               // CUSTOMER | PACKING_SLIP | COMPUTER_LABELS
   mrp                 Float?
   mfgDate             DateTime?  @map("mfg_date")
@@ -939,8 +940,20 @@ model Notification {
   title      String
   message    String
   read       Boolean   @default(false)
-  link       String?
+  link    String?
   createdAt  DateTime  @default(now()) @map("created_at")
-  readAt     DateTime? @map("read_at")
   @@map("notification")
+}
+
+// ─── CONFIGURABLE OPTIONS (dropdown lists managed by admin) ──────────────────
+model ConfigurableOption {
+  id         String   @id @default(cuid())
+  category   String                          // CARRIER | PRIMARY_PACK | SECONDARY_PACK
+  value      String
+  isActive   Boolean  @default(true) @map("is_active")
+  sortOrder  Int      @default(0)    @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([category, value])
+  @@map("configurable_option")
 }

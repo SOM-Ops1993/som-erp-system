@@ -129,6 +129,7 @@ export default async function salesOrderRoutes(fastify) {
             unitUom:             item.unitUom             || null,
             unitPackType:        item.unitPackType        || null,
             packingType:         item.packingType         || null,
+            unitsPerCS:          item.unitsPerCS ? parseInt(item.unitsPerCS) : null,
             totalCS:             item.totalCS ? parseInt(item.totalCS) : null,
             labelType:           item.labelType           || null,
             mrp:                 item.mrp ? parseFloat(item.mrp) : null,
@@ -204,14 +205,14 @@ export default async function salesOrderRoutes(fastify) {
       'customerProductName','inhouseProductName','inhouseProductCode',
       'activeSpecs','activeIngredient','carrier','batchNo','sectionName',
       'totalQty','totalUom','unitQty','unitUom','unitPackType','packingType',
-      'totalCS','labelType','mrp','mfgDate','expDate','status'
+      'unitsPerCS','totalCS','labelType','mrp','mfgDate','expDate','status'
     ]
     const data = {}
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
         if (['totalQty','unitQty','mrp'].includes(key) && req.body[key] !== null)
           data[key] = parseFloat(req.body[key])
-        else if (key === 'totalCS' && req.body[key] !== null)
+        else if (['totalCS','unitsPerCS'].includes(key) && req.body[key] !== null)
           data[key] = parseInt(req.body[key])
         else if (['mfgDate','expDate'].includes(key))
           data[key] = req.body[key] ? new Date(req.body[key]) : null
@@ -317,7 +318,7 @@ export default async function salesOrderRoutes(fastify) {
           activeSpecs, activeIngredient, carrier, sectionName,
           totalQty, totalUom = 'KG',
           unitQty, unitUom, unitPackType, packingType,
-          totalCS, labelType, mrp, salesStaff, remarks,
+          unitsPerCS, totalCS, labelType, mrp, salesStaff, remarks,
         } = row
 
         // Validate required fields
@@ -383,6 +384,7 @@ export default async function salesOrderRoutes(fastify) {
             unitUom:             unitUom  || null,
             unitPackType:        unitPackType  || null,
             packingType:         packingType   || null,
+            unitsPerCS:          unitsPerCS ? parseInt(unitsPerCS) : null,
             totalCS:             totalCS  ? parseInt(totalCS)  : null,
             labelType:           labelType || null,
             mrp:                 mrp       ? parseFloat(mrp) : null,

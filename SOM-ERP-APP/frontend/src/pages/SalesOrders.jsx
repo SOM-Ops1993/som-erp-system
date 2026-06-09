@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { salesOrderApi, productApi, customerProfileApi, cpProfileApi } from '../api/client'
+import { salesOrderApi, productApi, customerProfileApi, cpProfileApi, configurableOptionsApi } from '../api/client'
 import { STATIC_CUSTOMER_PROFILES } from '../data/customerProfiles'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -289,204 +289,134 @@ function CustomerProductPicker({ value, cpProfiles, onSelect, onChange }) {
   )
 }
 
-function LineItemRow({ item, idx, products, cpProfiles, onChange, onRemove, onProductPicked, onCpProductPicked }) {
-  const set = (k, v) => onChange(idx, { ...item, [k]: v })
-  const showLabelDetails = LABEL_NEEDS_DETAILS.has(item.labelType)
-  const ppIsCustom = item.unitPackType && !PRIMARY_PACKING.includes(item.unitPackType) && item.unitPackType !== ''
-  const spIsCustom = item.packingType  && !SECONDARY_PACKING.includes(item.packingType) && item.packingType  !== ''
+// ─────────────────────────────────────────────────────────────────────────────
+// Table row — one product line in the new wide-table booking form
+// ─────────────────────────────────────────────────────────────────────────────
+function TableRow({ item, idx, cpProfiles, carriers, primaryPacks, secondaryPacks, onChange, onRemove, onCpProductPicked }) {
+  const set = (k, v) => {
+    const updated = { ...item, [k]: v }
+    if (['totalQty','unitQty','unitsPerCS'].includes(k)) {
+      const tq = k === 'totalQty'  ? v : item.totalQty
+      const uq = k === 'unitQty'   ? v : item.unitQty
+      const up = k === 'unitsPerCS'? v : item.unitsPerCS
+      updated.totalCS = calcTotalCS(tq, uq, up)
+    }
+    onChange(idx, updated)
+  }
+
+  const inp = 'w-full border border-gray-200 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-green-500 bg-white'
+  const sel = 'w-full border border-gray-200 rounded px-1 py-1 text-xs bg-white focus:outline-none focus:border-green-500'
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Line {idx + 1}</span>
-        {item._memApplied && (
-          <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">
-            Memory applied
-          </span>
+    <tr className="border-b border-gray-100 hover:bg-gray-50 align-top">
+      {/* # */}
+      <td className="px-2 py-2 text-center text-xs text-gray-400 font-semibold w-8">{idx + 1}</td>
+
+      {/* Customer Product Name */}
+      <td className="px-1 py-1.5 min-w-[160px]">
+        <CustomerProductPicker
+          value={item.customerProductName}
+          cpProfiles={cpProfiles}
+          onSelect={p => onCpProductPicked(idx, p)}
+          onChange={v => set('customerProductName', v)}
+        />
+      </td>
+
+      {/* Inhouse Product Name */}
+      <td className="px-1 py-1.5 min-w-[150px]">
+        <input value={item.inhouseProductName || ''} onChange={e => set('inhouseProductName', e.target.value)}
+          className={inp} placeholder="Search inhouse…" />
+        {item.inhouseProductCode && (
+          <div className="text-xs text-gray-400 mt-0.5 px-1 truncate">{item.inhouseProductCode}</div>
         )}
-      </div>
-        <button type="button" onClick={() => onRemove(idx)} className="text-xs text-red-400 hover:underline">Remove</button>
-      </div>
+      </td>
 
-      {/* Product names */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            Customer Product Name *
-            {cpProfiles.length > 0 && (
-              <span className="ml-1.5 text-green-600 font-normal">({cpProfiles.length} known)</span>
-            )}
-          </label>
-          <CustomerProductPicker
-            value={item.customerProductName}
-            cpProfiles={cpProfiles}
-            onChange={v => set('customerProductName', v)}
-            onSelect={profile => onCpProductPicked(idx, profile)} />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Inhouse Product Name *</label>
-          <InhouseProductPicker value={item.inhouseProductName} productCode={item.inhouseProductCode}
-            products={products}
-            onChange={(name, code) => { onChange(idx, { ...item, inhouseProductName: name, inhouseProductCode: code }); if (code) onProductPicked(idx, code) }} />
-        </div>
-      </div>
+      {/* Order Qty */}
+      <td className="px-1 py-1.5 w-20">
+        <input type="number" value={item.totalQty || ''} onChange={e => set('totalQty', e.target.value)}
+          className={inp} placeholder="0" min="0" />
+      </td>
 
-      {/* Specs */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">CFU / Specs</label>
-          <input value={item.activeSpecs || ''} onChange={e => set('activeSpecs', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-            placeholder="e.g. 2x10^9 CFU/g" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Carrier</label>
-          <select value={item.carrier || ''} onChange={e => set('carrier', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-            {CARRIER_OPTIONS.map(c => <option key={c} value={c}>{c || '— Select —'}</option>)}
-          </select>
-        </div>
-      </div>
+      {/* UOM */}
+      <td className="px-1 py-1.5 w-16">
+        <select value={item.totalUom || 'KG'} onChange={e => set('totalUom', e.target.value)} className={sel}>
+          {UOMS.map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
+      </td>
 
-      {/* Qty + Section */}
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Total Qty *</label>
-          <div className="flex gap-2">
-            <input type="number" value={item.totalQty} onChange={e => {
-              const newQty = e.target.value
-              const newCS = calcTotalCS(newQty, item.unitQty, item.unitsPerCS)
-              onChange(idx, { ...item, totalQty: newQty, ...(newCS ? { totalCS: newCS } : {}) })
-            }}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="0" min="0" />
-            <select value={item.totalUom || 'KG'} onChange={e => set('totalUom', e.target.value)}
-              className="w-20 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {UOMS.map(u => <option key={u}>{u}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Unit Qty (per pack)</label>
-          <div className="flex gap-2">
-            <input type="number" value={item.unitQty || ''} onChange={e => set('unitQty', e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="e.g. 1" min="0" />
-            <select value={item.unitUom || 'KG'} onChange={e => set('unitUom', e.target.value)}
-              className="w-20 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {UOMS.map(u => <option key={u}>{u}</option>)}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Section / MFG Unit</label>
-          <select value={item.sectionName || ''} onChange={e => set('sectionName', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-            <option value="">— Select —</option>
-            {SECTIONS.map(s => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
+      {/* Specification / CFU */}
+      <td className="px-1 py-1.5 min-w-[110px]">
+        <input value={item.activeSpecs || ''} onChange={e => set('activeSpecs', e.target.value)}
+          className={inp} placeholder="2×10⁹ CFU/g" />
+      </td>
 
-      {/* Packing */}
-      <div className="border-t border-gray-200 pt-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Packing</p>
-        <div className="grid grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Primary Pack</label>
-            <select value={ppIsCustom ? '__CUSTOM__' : (item.unitPackType || '')}
-              onChange={e => { if (e.target.value === '__CUSTOM__') set('unitPackType', ''); else set('unitPackType', e.target.value) }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {PRIMARY_PACKING.map(p => <option key={p} value={p}>{p === '__CUSTOM__' ? '+ Add Custom…' : p || '— Select —'}</option>)}
-            </select>
-            {ppIsCustom && (
-              <input value={item.unitPackType} onChange={e => set('unitPackType', e.target.value)}
-                placeholder="Type custom…" className="mt-1 w-full border border-green-300 rounded-lg px-3 py-2 text-sm" />
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Secondary Pack</label>
-            <select value={spIsCustom ? '__CUSTOM__' : (item.packingType || '')}
-              onChange={e => { if (e.target.value === '__CUSTOM__') set('packingType', ''); else set('packingType', e.target.value) }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {SECONDARY_PACKING.map(p => <option key={p} value={p}>{p === '__CUSTOM__' ? '+ Add Custom…' : p || '— Select —'}</option>)}
-            </select>
-            {spIsCustom && (
-              <input value={item.packingType} onChange={e => set('packingType', e.target.value)}
-                placeholder="Type custom…" className="mt-1 w-full border border-green-300 rounded-lg px-3 py-2 text-sm" />
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Unit Per Sec. Pack</label>
-            <input type="number" value={item.unitsPerCS || ''} onChange={e => {
-              const newUPS = e.target.value
-              const newCS = calcTotalCS(item.totalQty, item.unitQty, newUPS)
-              onChange(idx, { ...item, unitsPerCS: newUPS, ...(newCS ? { totalCS: newCS } : {}) })
-            }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="e.g. 10" min="0" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">No. of Sec. Packs</label>
-            <input type="number" value={item.totalCS || ''} onChange={e => set('totalCS', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="Auto or enter" min="0" />
-          </div>
-        </div>
-      </div>
+      {/* Carrier */}
+      <td className="px-1 py-1.5 min-w-[110px]">
+        <select value={item.carrier || ''} onChange={e => set('carrier', e.target.value)} className={sel}>
+          <option value="">— Select —</option>
+          {carriers.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </td>
 
-      {/* Label section — always show label type, hide detail fields for Packing Slip */}
-      <div className="border-t border-gray-200 pt-3">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Label Details</p>
-        <div className="grid grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Label Type</label>
-            <select value={item.labelType || ''} onChange={e => set('labelType', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
-              {LABEL_TYPES.map(lt => <option key={lt.value} value={lt.value}>{lt.label}</option>)}
-            </select>
-            {item.labelType && !LABEL_NEEDS_DETAILS.has(item.labelType) && (
-              <p className="mt-1 text-xs text-gray-400">No print details needed</p>
-            )}
-          </div>
-        </div>
+      {/* Section */}
+      <td className="px-1 py-1.5 w-28">
+        <select value={item.sectionName || ''} onChange={e => set('sectionName', e.target.value)} className={sel}>
+          <option value="">— Select —</option>
+          {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </td>
 
-        {/* Batch / Date / MRP — only for CUSTOMER, COMPUTER, RETAIL */}
-        {showLabelDetails && (
-          <div className="mt-3 grid grid-cols-4 gap-3 bg-green-50 border border-green-100 rounded-xl p-3">
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">Batch No.</label>
-              <input value={item.batchNo || ''} onChange={e => set('batchNo', e.target.value)}
-                className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
-                placeholder="e.g. GAS250601" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">Mfg. Date</label>
-              <input type="date" value={item.mfgDate || ''} onChange={e => {
-                set('mfgDate', e.target.value)
-                // Auto-recalculate EXP when MFG changes if shelf life known
-                if (item._shelfLifeDays && e.target.value) {
-                  set('expDate', addDays(e.target.value, item._shelfLifeDays))
-                }
-              }}
-                className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">Exp. Date</label>
-              <input type="date" value={item.expDate || ''} onChange={e => set('expDate', e.target.value)}
-                className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-green-800 mb-1">MRP ()</label>
-              <input type="number" value={item.mrp || ''} onChange={e => set('mrp', e.target.value)}
-                className="w-full border border-green-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-green-500 focus:outline-none"
-                placeholder="optional" min="0" />
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Unit Pack Qty */}
+      <td className="px-1 py-1.5 w-20">
+        <input type="number" value={item.unitQty || ''} onChange={e => set('unitQty', e.target.value)}
+          className={inp} placeholder="1" min="0" />
+        {item.unitUom && <div className="text-xs text-gray-400 mt-0.5 px-1">{item.unitUom}</div>}
+      </td>
+
+      {/* Primary Pack */}
+      <td className="px-1 py-1.5 min-w-[120px]">
+        <select value={item.unitPackType || ''} onChange={e => set('unitPackType', e.target.value)} className={sel}>
+          <option value="">— Select —</option>
+          {primaryPacks.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+      </td>
+
+      {/* Secondary Pack */}
+      <td className="px-1 py-1.5 min-w-[120px]">
+        <select value={item.packingType || ''} onChange={e => set('packingType', e.target.value)} className={sel}>
+          <option value="">— Select —</option>
+          {secondaryPacks.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+      </td>
+
+      {/* Units per Secondary Pack */}
+      <td className="px-1 py-1.5 w-16">
+        <input type="number" value={item.unitsPerCS || ''} onChange={e => set('unitsPerCS', e.target.value)}
+          className={inp} placeholder="0" min="0" />
+      </td>
+
+      {/* No. of Secondary Packs — auto-calc, read-only */}
+      <td className="px-2 py-2 w-16 text-center">
+        <div className={`text-sm font-bold rounded px-2 py-1 ${item.totalCS ? 'bg-green-50 text-green-700 border border-green-200' : 'text-gray-300 bg-gray-50'}`}>
+          {item.totalCS || '—'}
+        </div>
+      </td>
+
+      {/* Label Details */}
+      <td className="px-1 py-1.5 min-w-[120px]">
+        <select value={item.labelType || ''} onChange={e => set('labelType', e.target.value)} className={sel}>
+          {LABEL_TYPES.map(lt => <option key={lt.value} value={lt.value}>{lt.label}</option>)}
+        </select>
+      </td>
+
+      {/* Delete */}
+      <td className="px-2 py-2 text-center">
+        <button type="button" onClick={() => onRemove(idx)}
+          className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded p-1 text-xs leading-none">
+          ✕
+        </button>
+      </td>
+    </tr>
   )
 }
 
@@ -495,109 +425,105 @@ function LineItemRow({ item, idx, products, cpProfiles, onChange, onRemove, onPr
 // ─────────────────────────────────────────────────────────────────────────────
 const BLANK_ITEM = {
   customerProductName:'', inhouseProductName:'', inhouseProductCode:'',
-  activeIngredient:'', activeSpecs:'', carrier:'',
+  activeSpecs:'', carrier:'',
   sectionName:'', totalQty:'', totalUom:'KG',
   unitQty:'', unitUom:'KG', unitsPerCS:'', totalCS:'',
   unitPackType:'', packingType:'',
-  labelType:'', batchNo:'', mfgDate:'', expDate:'', mrp:'',
+  labelType:'',
+  // Dispatch-time fields (filled by inventory team, not on this form)
+  batchNo:'', mfgDate:'', expDate:'', mrp:'',
 }
 
 function OrderForm({ initial, products, profiles, onSave, onCancel }) {
   const today = new Date().toISOString().split('T')[0]
-
   const [hdr, setHdr] = useState({
-    company: COMPANIES[0] || 'SOM',
-    diNo: '',
-    customerName: '',
-    orderType: 'DOMESTIC',
-    salesStaff: '',
-    orderReceivedDate: today,
-    remarks: '',
+    company:            COMPANIES[0] || 'SOM',
+    diNo:               '',
+    customerName:       '',
+    orderType:          'DOMESTIC',
+    orderReceivedDate:  today,
+    remarks:            '',
     ...initial,
   })
   const [items, setItems] = useState(
     initial?.items?.length
-      ? initial.items.map(it => ({
-          ...BLANK_ITEM, ...it,
-          mfgDate: it.mfgDate ? new Date(it.mfgDate).toISOString().split('T')[0] : '',
-          expDate: it.expDate ? new Date(it.expDate).toISOString().split('T')[0] : '',
-        }))
+      ? initial.items.map(it => ({ ...BLANK_ITEM, ...it }))
       : [{ ...BLANK_ITEM }]
   )
-  const [saving,     setSaving]     = useState(false)
-  const [err,        setErr]        = useState('')
-  const [cpProfiles, setCpProfiles] = useState([])   // product profiles for current customer
+  const [saving,       setSaving]       = useState(false)
+  const [err,          setErr]          = useState('')
+  const [cpProfiles,   setCpProfiles]   = useState([])
+  const [carriers,     setCarriers]     = useState([])
+  const [primaryPacks, setPrimaryPacks] = useState([])
+  const [secondaryPacks,setSecondaryPacks] = useState([])
   const setH = (k, v) => setHdr(h => ({ ...h, [k]: v }))
 
-  // Load customer-product profiles whenever customer changes
-  // Backend auto-seeds these on first startup; gracefully empty until then
+  // Load configurable dropdown options
+  useEffect(() => {
+    configurableOptionsApi.list().then(r => {
+      const opts = r.data || []
+      setCarriers(opts.filter(o => o.category === 'CARRIER').map(o => o.value))
+      setPrimaryPacks(opts.filter(o => o.category === 'PRIMARY_PACK').map(o => o.value))
+      setSecondaryPacks(opts.filter(o => o.category === 'SECONDARY_PACK').map(o => o.value))
+    }).catch(() => {
+      // Fallback to hardcoded until migration is run
+      setCarriers(['Dextrose','Talc','Lactose','HSCAS','China Clay','Diatomaceous Earth','LSP','Precipitated CaCO3','Silica'])
+      setPrimaryPacks(['LD Pouch','AL Pouch','HDPE Jar','100ml Bottle (Round)','100ml Bottle (Regular)','100ml Bottle (Triangle)','200ml Bottle (Round)','200ml Bottle (Regular)','200ml Bottle (Triangle)','500ml Bottle (Round)','500ml Bottle (Regular)','500ml Bottle (Triangle)','1L Bottle (Round)','1L Bottle (Regular)','1L Bottle (Triangle)'])
+      setSecondaryPacks(['W-CBB','B-CBB','OMB 30 (30kg Drum)','OMB 50 (50kg Drum)','25Kg HDPE Bag','50Kg HDPE Bag','Cartons','25L Jerry Can','50L Barrel','5L Can','10L Can','Others'])
+    })
+  }, [])
+
+  // Load customer-product profiles on customer change
   useEffect(() => {
     if (!hdr.customerName?.trim()) { setCpProfiles([]); return }
     cpProfileApi.forCustomer(hdr.customerName.trim())
       .then(res => setCpProfiles(res.data || []))
-      .catch(() => setCpProfiles([]))  // fine if empty — picker shows as free text
+      .catch(() => setCpProfiles([]))
   }, [hdr.customerName])
 
-  // Apply a memory profile to a line item — shared by both lookup paths
-  function applyMemoryProfile(idx, mem) {
+  // Apply profile memory to a row
+  function applyProfile(idx, mem) {
     if (!mem) return
-    const suggested = mem.lastBatchNo ? suggestNextBatch(mem.lastBatchNo) : ''
     setItems(its => its.map((it, i) => {
       if (i !== idx) return it
-      const newUnitQty   = mem.unitQty    ? String(mem.unitQty)    : it.unitQty
-      const newUnitUom   = mem.unitUom    || it.unitUom
+      const newUnitQty    = mem.unitQty    ? String(mem.unitQty)    : it.unitQty
+      const newUnitUom    = mem.unitUom    || it.unitUom
       const newUnitsPerCS = mem.unitsPerCS ? String(mem.unitsPerCS) : it.unitsPerCS
-      const newTotalCS   = calcTotalCS(it.totalQty, newUnitQty, newUnitsPerCS)
-      const mfgDate      = it.mfgDate || new Date().toISOString().split('T')[0]
+      const newTotalCS    = calcTotalCS(it.totalQty, newUnitQty, newUnitsPerCS)
       return {
         ...it,
-        activeSpecs:   mem.activeSpecs   || it.activeSpecs,
-        carrier:       mem.carrier       || it.carrier,
-        sectionName:   mem.sectionName   || it.sectionName,
-        unitQty:       newUnitQty,
-        unitUom:       newUnitUom,
-        unitPackType:  mem.primaryPack   || it.unitPackType,
-        packingType:   mem.secondaryPack || it.packingType,
-        unitsPerCS:    newUnitsPerCS,
-        totalCS:       newTotalCS        || it.totalCS,
-        totalUom:      mem.totalUom      || it.totalUom,
-        labelType:     mem.labelType     || it.labelType,
-        mrp:           mem.mrp           ? String(mem.mrp) : it.mrp,
-        batchNo:       suggested         || it.batchNo,
-        mfgDate,
-        expDate: mem.shelfLifeDays ? addDays(mfgDate, mem.shelfLifeDays) : it.expDate,
-        _shelfLifeDays: mem.shelfLifeDays || null,
-        _memApplied:    true,
+        activeSpecs:  mem.activeSpecs   || it.activeSpecs,
+        carrier:      mem.carrier       || it.carrier,
+        sectionName:  mem.sectionName   || it.sectionName,
+        unitQty:      newUnitQty,
+        unitUom:      newUnitUom,
+        unitPackType: mem.primaryPack   || it.unitPackType,
+        packingType:  mem.secondaryPack || it.packingType,
+        unitsPerCS:   newUnitsPerCS,
+        totalCS:      newTotalCS        || it.totalCS,
+        totalUom:     mem.totalUom      || it.totalUom,
+        labelType:    mem.labelType     || it.labelType,
       }
     }))
   }
 
-  // Triggered when user picks from InhouseProductPicker (by productCode)
-  function applyProductMemory(idx, productCode) {
-    const mem = cpProfiles.find(p => p.productCode === productCode)
-      || cpProfiles.find(p => p.inhouseName === productCode) // fallback by name
-    applyMemoryProfile(idx, mem)
-  }
-
-  // Triggered when user picks from CustomerProductPicker (by productName)
-  function applyCpProductMemory(idx, profile) {
-    // profile is the full cpProfile object from the dropdown
-    applyMemoryProfile(idx, profile)
-    // Also fill inhouseName if profile has it
+  // Customer product picker selected — apply profile + fill inhouse fields
+  function applyCpProfile(idx, profile) {
+    applyProfile(idx, profile)
     if (profile.inhouseName || profile.productCode) {
       setItems(its => its.map((it, i) => i !== idx ? it : {
         ...it,
         inhouseProductName: profile.inhouseName || it.inhouseProductName,
-        inhouseProductCode: profile.productCode  || it.inhouseProductCode,
+        inhouseProductCode: profile.productCode || it.inhouseProductCode,
       }))
     }
   }
 
   async function submit(e) {
     e.preventDefault()
-    if (!hdr.diNo.trim())           return setErr('DI No. is required')
-    if (!hdr.customerName.trim())   return setErr('Customer Name is required')
-    if (items.some(it => !it.customerProductName || !it.totalQty))
+    if (!hdr.diNo.trim())         return setErr('DI No. is required')
+    if (!hdr.customerName.trim()) return setErr('Customer Name is required')
+    if (items.some(it => !it.customerProductName?.trim() || !it.totalQty))
       return setErr('Each line needs a Customer Product Name and Quantity')
     setSaving(true); setErr('')
     try { await onSave({ ...hdr, items }) }
@@ -605,115 +531,147 @@ function OrderForm({ initial, products, profiles, onSave, onCancel }) {
     finally { setSaving(false) }
   }
 
-  return (
-    <form onSubmit={submit} className="space-y-6">
-      {err && <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg border border-red-200">{err}</div>}
+  const fieldCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500'
 
-      {/* Order header */}
-      <div>
-        <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wide">Order Details</h3>
-        <div className="grid grid-cols-4 gap-4">
+  return (
+    <form onSubmit={submit}>
+      {err && (
+        <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg border border-red-200 mb-5">⚠ {err}</div>
+      )}
+
+      {/* ── Section 1: Order Information ──────────────────────────────────── */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 rounded-full bg-green-700 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
+          <h3 className="font-semibold text-gray-800 text-sm">Order Information</h3>
+        </div>
+        <div className="grid grid-cols-4 gap-4 mb-3">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">DI No. *</label>
             <input value={hdr.diNo || ''} onChange={e => setH('diNo', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="e.g. DVS/SO-25-001" />
+              className={fieldCls} placeholder="e.g. DVS/SO-25-001" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">Customer Name *</label>
             <CustomerNamePicker
-              value={hdr.customerName}
-              profiles={profiles}
+              value={hdr.customerName} profiles={profiles}
               onSelect={(name, company, orderType) => {
                 setH('customerName', name)
                 if (company)   setH('company', company)
                 if (orderType) setH('orderType', orderType)
-              }}
-            />
-            {hdr.customerName && profiles.find(p => p.customerName === hdr.customerName.toUpperCase()) && (
-              <p className="mt-1 text-xs text-green-600">Auto-filled from memory</p>
-            )}
+              }} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Type</label>
-            <select value={hdr.orderType} onChange={e => setH('orderType', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Type *</label>
+            <select value={hdr.orderType} onChange={e => setH('orderType', e.target.value)} className={fieldCls}>
               {ORDER_TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Company</label>
-            <select value={hdr.company} onChange={e => setH('company', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Company *</label>
+            <select value={hdr.company} onChange={e => setH('company', e.target.value)} className={fieldCls}>
               {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Sales Staff</label>
-            <input value={hdr.salesStaff || ''} onChange={e => setH('salesStaff', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="Name of sales person" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Date</label>
-            <input type="date" value={hdr.orderReceivedDate} onChange={e => setH('orderReceivedDate', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none" />
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Order Date *</label>
+            <input type="date" value={hdr.orderReceivedDate || today} onChange={e => setH('orderReceivedDate', e.target.value)}
+              className={fieldCls} />
           </div>
           <div className="col-span-3">
             <label className="block text-xs font-semibold text-gray-500 mb-1">Order Remarks</label>
             <input value={hdr.remarks || ''} onChange={e => setH('remarks', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none"
-              placeholder="Special instructions, delivery notes…" />
+              className={fieldCls} placeholder="Special instructions, delivery notes, terms or any other remarks…" />
           </div>
         </div>
-        <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
+        <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
           <span>ℹ</span>
-          <span>Invoice, batch details and dispatch info are filled in the <strong>Dispatch</strong> tab once the order reaches the inventory team.</span>
+          <span>Invoice, batch details and dispatch information will be completed by the Inventory team once the order reaches the inventory stage.</span>
         </div>
       </div>
 
-      {/* Line items */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Product Lines</h3>
-          <button type="button" onClick={() => setItems(it => [...it, { ...BLANK_ITEM }])}
-            className="text-sm text-green-700 font-semibold hover:underline">+ Add Line</button>
+      {/* ── Section 2: Product Details ─────────────────────────────────────── */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-green-700 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
+            <h3 className="font-semibold text-gray-800 text-sm">Product Details</h3>
+          </div>
+          <button type="button"
+            onClick={() => setItems(it => [...it, { ...BLANK_ITEM }])}
+            className="text-sm bg-green-700 text-white px-3 py-1.5 rounded-lg hover:bg-green-800 font-medium">
+            + Add Line
+          </button>
         </div>
-        <div className="space-y-3">
-          {items.map((item, idx) => (
-            <LineItemRow key={idx} item={item} idx={idx}
-              products={products}
-              cpProfiles={cpProfiles}
-              onChange={(i, u) => setItems(it => it.map((x, j) => j === i ? u : x))}
-              onRemove={i => setItems(it => it.filter((_, j) => j !== i))}
-              onProductPicked={applyProductMemory}
-              onCpProductPicked={applyCpProductMemory} />
-          ))}
+
+        <div className="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+          <table className="w-full text-sm border-collapse" style={{ minWidth: '1450px' }}>
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-2 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center w-8">#</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'160px'}}>Customer Product Name</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'150px'}}>Inhouse Product Name</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{width:'80px'}}>Order Qty</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{width:'65px'}}>UOM</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'115px'}}>Specification / CFU</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'110px'}}>Carrier</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{width:'105px'}}>Section</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{width:'85px'}}>Unit Pack Qty</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'125px'}}>Primary Pack</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'125px'}}>Secondary Pack</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{width:'80px'}}>Units per Secondary Pack</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{width:'75px'}}>No. of Secondary Packs</th>
+                <th className="px-2 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide" style={{minWidth:'120px'}}>Label Details</th>
+                <th className="px-2 py-2.5 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, idx) => (
+                <TableRow
+                  key={idx} item={item} idx={idx}
+                  cpProfiles={cpProfiles}
+                  carriers={carriers}
+                  primaryPacks={primaryPacks}
+                  secondaryPacks={secondaryPacks}
+                  onChange={(i, u) => setItems(its => its.map((x, j) => j === i ? u : x))}
+                  onRemove={i => setItems(its => its.filter((_, j) => j !== i))}
+                  onCpProductPicked={applyCpProfile}
+                />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-gray-50 border-t border-gray-200">
+                <td colSpan={15} className="px-4 py-2.5 text-xs text-gray-500">
+                  <strong className="text-gray-700">{items.length}</strong> product line{items.length !== 1 ? 's' : ''}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
-      {err && (
-        <div className="text-sm text-red-600 bg-red-50 px-4 py-3 rounded-lg border border-red-200">
-          ⚠ {err}
-        </div>
-      )}
-      <div className="flex gap-3 pt-2">
-        <button type="submit" disabled={saving}
-          className="flex-1 text-white py-2.5 rounded-lg font-semibold text-sm disabled:opacity-50"
-          style={{ background: BRAND }}>
-          {saving ? 'Saving…' : initial?.id ? 'Update Order' : 'Create Sales Order'}
-        </button>
+      {/* ── Actions ────────────────────────────────────────────────────────── */}
+      <div className="flex gap-3">
         <button type="button" onClick={onCancel}
-          className="flex-1 border border-gray-300 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+          className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+          Cancel
+        </button>
+        <button type="button"
+          onClick={() => { setHdr({ company: COMPANIES[0]||'SOM', diNo:'', customerName:'', orderType:'DOMESTIC', orderReceivedDate:today, remarks:'' }); setItems([{...BLANK_ITEM}]) }}
+          className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+          ↺ Reset
+        </button>
+        <button type="submit" disabled={saving}
+          className="flex-1 py-2.5 rounded-lg font-semibold text-sm text-white disabled:opacity-50"
+          style={{ background: BRAND }}>
+          {saving ? 'Saving…' : initial?.id ? '✓ Update Order' : '✓ Create Sales Order'}
+        </button>
       </div>
     </form>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Dispatch Modal — verification + dispatch action
-// Read-only: product details. Editable: invoice/transport/dispatched by.
-// ─────────────────────────────────────────────────────────────────────────────
+
 function DispatchModal({ order, onSave, onDelete, onClose }) {
   const today = new Date().toISOString().split('T')[0]
   const [saving,       setSaving]       = useState(false)
@@ -1441,6 +1399,10 @@ export default function SalesOrders() {
           onSave={handleDispatchSave}
           onDelete={handleDelete}
           onClose={() => setDispatchOrder(null)} />
+      )}
+    </div>
+  )
+}
       )}
     </div>
   )
