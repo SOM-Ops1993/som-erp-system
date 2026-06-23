@@ -24,28 +24,16 @@ export const salesOrderApi = {
 }
 
 export const customerProfileApi = {
-  list:   ()             => api.get('/customer-profiles'),
-  get:    (id)           => api.get(`/customer-profiles/${id}`),
-  create: (data)         => api.post('/customer-profiles', data),
-  update: (id, data)     => api.put(`/customer-profiles/${id}`, data),
-  remove: (id)           => api.delete(`/customer-profiles/${id}`),
-  upsert: (data)         => api.post('/customer-profiles/upsert', data),
-  seed:   (profiles)     => api.post('/customer-profiles/seed', { profiles }),
+  list:   ()        => api.get('/customer-profiles'),
+  upsert: (data)    => api.post('/customer-profiles/upsert', data),
+  seed:   (profiles) => api.post('/customer-profiles/seed', { profiles }),
 }
 
 export const cpProfileApi = {
-  forCustomer: (customer)          => api.get('/customer-profiles/cp-profiles', { params: { customer } }),
-  create:      (data)              => api.post('/cp-profiles', data),
-  update:      (id, data)          => api.put(`/cp-profiles/${id}`, data),
-  remove:      (id)                => api.delete(`/cp-profiles/${id}`),
-  upsertMany:  (customerName, items) => api.post('/customer-profiles/upsert-many', { customerName, items }),
-}
-
-export const configurableOptionsApi = {
-  list:   (category) => api.get('/config-options', { params: category ? { category } : {} }),
-  create: (data)     => api.post('/config-options', data),
-  update: (id, data) => api.put(`/config-options/${id}`, data),
-  remove: (id)       => api.delete(`/config-options/${id}`),
+  forCustomer: (customer) =>
+    api.get('/customer-profiles/cp-profiles', { params: { customer } }),
+  upsertMany:  (customerName, items) =>
+    api.post('/customer-profiles/upsert-many', { customerName, items }),
 }
 
 export const bomSendApi = {

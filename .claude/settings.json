@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(\\(Get-Item \"c:\\\\Amit\\\\CODE\\\\SOM_ERP_System\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\schema.prisma\"\\).LastWriteTime; Select-String -Path \"c:\\\\Amit\\\\CODE\\\\SOM_ERP_System\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\schema.prisma\" -Pattern \"packWarehouses|pack_warehouses\" -SimpleMatch | Select-Object -First 3)",
-      "PowerShell(\\(Get-Item \"c:\\\\Amit\\\\CODE\\\\SOM_ERP_System\\\\backend\\\\node_modules\\\\@prisma\\\\client\\\\index.js\"\\).LastWriteTime; \\(Get-Item \"c:\\\\Amit\\\\CODE\\\\SOM_ERP_System\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\index.js\"\\).LastWriteTime)"
-    ]
-  }
-}

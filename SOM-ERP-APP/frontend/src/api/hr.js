@@ -1,21 +1,5 @@
 import { api } from '../context/context.jsx'
 
-export const bmrApi = {
-  list:            (params)          => api.get('/bmr', { params }),
-  get:             (id)              => api.get(`/bmr/${id}`),
-  create:          (data)            => api.post('/bmr', data),
-  saveSectionA:    (id, data)        => api.put(`/bmr/${id}/section-a`, data),
-  saveSectionB:    (id, data)        => api.put(`/bmr/${id}/section-b`, data),
-  saveSectionC:    (id, data)        => api.put(`/bmr/${id}/section-c`, data),
-  tickChecklist:   (id, itemId, data)=> api.patch(`/bmr/${id}/section-c/checklist/${itemId}`, data),
-  saveSectionD:    (id, data)        => api.put(`/bmr/${id}/section-d`, data),
-  saveSectionE:    (id, data)        => api.put(`/bmr/${id}/section-e`, data),
-  addDeviation:    (id, data)        => api.post(`/bmr/${id}/deviation`, data),
-  addSample:       (id, data)        => api.post(`/bmr/${id}/sample`, data),
-  sendToQc:        (id, sampleId, data) => api.patch(`/bmr/${id}/sample/${sampleId}/send-to-qc`, data),
-  verifySample:    (id, sampleId, data) => api.patch(`/bmr/${id}/sample/${sampleId}/verify`, data),
-}
-
 export const employeeApi = {
   list:            (params)             => api.get('/erp/employees', { params }),
   get:             (id)                 => api.get(`/erp/employees/${id}`),
