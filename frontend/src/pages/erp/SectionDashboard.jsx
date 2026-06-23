@@ -6,7 +6,9 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { planningApi, bmrApi, bomSendApi } from '../../api/client'
+import { planningApi } from '../../api/planning'
+import { bmrApi } from '../../api/hr'
+import { bomSendApi } from '../../api/sales'
 
 const SECTIONS = ['POWDER','NANO','BOTANICAL','LIQUID','GRANULES']
 

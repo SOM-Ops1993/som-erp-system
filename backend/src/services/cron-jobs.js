@@ -220,15 +220,11 @@ export function startCronJobs(fastify) {
             )
             .join("\n");
 
-          await prisma.notification.create({
-            data: {
-              title: `Tomorrow's Plan — ${section} Section (${sectionPlans.length} batch${sectionPlans.length > 1 ? "es" : ""})`,
-              message: `Plans scheduled for tomorrow in ${section}:\n${summary}\n\nPlease ensure: blender cleaned ✓ · RM collected ✓ · Microbes ready ✓`,
-              role: "PRODUCTION",
-              section,
-              notifType: "IN_APP",
-              link: `/production/planning`,
-            },
+          await createNotification({
+            type: "evening_reminder",
+            title: `Tomorrow's Plan — ${section} Section (${sectionPlans.length} batch${sectionPlans.length > 1 ? "es" : ""})`,
+            message: `Plans scheduled for tomorrow in ${section}:\n${summary}\n\nPlease ensure: blender cleaned ✓ · RM collected ✓ · Microbes ready ✓`,
+            targetRole: "PRODUCTION",
           });
 
           log.info &&

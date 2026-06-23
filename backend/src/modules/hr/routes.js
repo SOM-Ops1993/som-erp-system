@@ -1,6 +1,8 @@
 import express from "express";
 import { authenticate, authorize } from "../../middleware/auth.js";
 import { listEmployees, listPages, listRoleDefaults, getPermissionsByRole, getEmployee, createEmployee, updateEmployee, deleteEmployee, savePermissions, seedDefaultPermissions, listCompanies, upsertCompany, deleteCompany } from "./employees/employees.controller.js";
+import BmrRouter from "./employees/bmr.js";
+import ConfigurableOptionRouter from "./employees/configurable-options.js";
 
 const HRRouter = express.Router();
 const adminOnly = authorize(["admin"]);
@@ -19,5 +21,11 @@ HRRouter.put("/erp/employees/:id", authenticate, updateEmployee);
 HRRouter.delete("/erp/employees/:id", authenticate, adminOnly, deleteEmployee);
 HRRouter.get("/erp/employees", authenticate, listEmployees);
 HRRouter.post("/erp/employees", authenticate, createEmployee);
+
+// ── BMR ───────────────────────────────────────────────────────────────────────
+HRRouter.use("/bmr", BmrRouter);
+
+// ── Configurable Options ──────────────────────────────────────────────────────
+HRRouter.use("/config-options", ConfigurableOptionRouter);
 
 export default HRRouter;

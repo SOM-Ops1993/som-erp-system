@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { customerProfileApi, cpProfileApi, configurableOptionsApi, productApi, recipeApi } from '../api/client'
+import { customerProfileApi, cpProfileApi, configurableOptionsApi } from '../api/sales'
+import { productApi, recipeApi } from '../api/masters'
 
 const ORDER_TYPES = ['DOMESTIC', 'EXPORT', 'ECOM', 'SAMPLE']
 const SECTIONS    = ['POWDER', 'NANO', 'BOTANICAL', 'LIQUID', 'GRANULES']

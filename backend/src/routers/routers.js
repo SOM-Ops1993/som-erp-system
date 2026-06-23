@@ -62,8 +62,8 @@ router.use("/", ProductionRouter);
 router.use("/", MasterDataRouter);
 
 // ── HR ────────────────────────────────────────────────────────────────────────
-// Handles: /api/erp/employees/*
-// router.use("/", HRRouter);
+// Handles: /api/erp/employees/*, /api/bmr/*, /api/config-options/*
+router.use("/", HRRouter);
 
 // ── Microbial ─────────────────────────────────────────────────────────────────
 // Handles: /api/microbial-sfg/*, /api/erp/microbial/*
