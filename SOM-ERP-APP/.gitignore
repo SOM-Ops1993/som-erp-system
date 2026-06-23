@@ -1,7 +1,0 @@
-node_modules/
-.env
-dist/
-*.log
-# Frontend build output (copied to backend/public for production)
-frontend/dist/
-backend/public/

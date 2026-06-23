@@ -1,0 +1,187 @@
+// ─── SALES ────────────────────────────────────────────────────────────────────
+//
+// Models in this file:
+//   SalesOrder              — Sales order header (SO-YYYY-NNNN)
+//   SalesOrderItem          — Line items within a sales order
+//   SoSequence              — Auto-increment sequence for SO numbers (per year)
+//   CustomerProfile         — Customer memory layer for auto-filling future SOs
+//   CustomerProductProfile  — Deep memory: per customer × product combination,
+//                             stores specs, packing, label, shelf-life, etc.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model SalesOrder {
+  id                    String           @id @default(cuid())
+  soId                  String           @unique @map("so_id")         // auto: SO-2026-0001
+  company               String                                          // DVS | SOM | AL-IPL | AL-PTE
+  diNo                  String           @map("di_no")
+  customerName          String           @map("customer_name")
+  orderType             String           @map("order_type")            // DOMESTIC | EXPORT | SAMPLE
+  orderReceivedDate     DateTime         @map("order_received_date")
+  priority              String           @default("MODERATE")          // URGENT | VERY_URGENT | MODERATE
+  estimatedDispatchDate DateTime         @map("estimated_dispatch_date")
+  invoiceNo             String?          @map("invoice_no")
+  invoiceDate           DateTime?        @map("invoice_date")
+  transportName         String?          @map("transport_name")
+  salesStaff            String?          @map("sales_staff")
+  dispatchedBy          String?          @map("dispatched_by")
+  remarks               String?
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  items                 SalesOrderItem[]
+
+  @@map("sales_order")
+}
+
+model SalesOrderItem {
+  id                  String     @id @default(cuid())
+  salesOrderId        String     @map("sales_order_id")
+  salesOrder          SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  lineNo              Int        @map("line_no")                        // 1, 2, 3…
+  customerProductName String     @map("customer_product_name")
+  inhouseProductName  String     @map("inhouse_product_name")
+  inhouseProductCode  String?    @map("inhouse_product_code")
+  activeSpecs         String?    @map("active_specs")
+  activeIngredient    String?    @map("active_ingredient")
+  carrier             String?
+  batchNo             String?    @map("batch_no")
+  sectionName         String?    @map("section_name")                   // NANO|BOTANICAL|LIQUID|POWDER|GRANULES
+  totalQty            Float      @map("total_qty")
+  totalUom            String     @default("KG") @map("total_uom")
+  unitQty             Float?     @map("unit_qty")
+  unitUom             String?    @map("unit_uom")
+  unitPackType        String?    @map("unit_pack_type")                 // Primary packing: Pouch, Bottle, Sachet
+  packingType         String?    @map("packing_type")                   // Secondary packing: Cartons | OMB30 | OMB50
+  totalCS             Int?       @map("total_cs")                       // Total no. of final packs
+  labelType           String?    @map("label_type")                     // CUSTOMER | PACKING_SLIP | COMPUTER_LABELS
+  mrp                 Float?
+  mfgDate             DateTime?  @map("mfg_date")
+  expDate             DateTime?  @map("exp_date")
+  status              String     @default("PENDING")
+  // PENDING | PLANNED | UNDER_PRODUCTION | PACKED | IN_INVENTORY | READY_TO_DISPATCH | DISPATCHED
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+
+  @@map("sales_order_item")
+}
+
+model SoSequence {
+  year Int @id
+  seq  Int @default(0)
+
+  @@map("so_sequence")
+}
+
+// ─── CUSTOMER MEMORY LAYER ────────────────────────────────────────────────────
+// Auto-fills fields on new Sales Orders based on past order history.
+
+model CustomerProfile {
+  id           String   @id @default(cuid())
+  customerName String   @unique @map("customer_name")
+  company      String   @default("")
+  orderType    String   @default("DOMESTIC") @map("order_type")
+  orderCount   Int      @default(1) @map("order_count")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("customer_profile")
+}
+
+// Key: (customerName, productName) — where productName is the customer-facing name.
+// Stores all line-level defaults that can be recalled when a repeat order is entered.
+
+model CustomerProductProfile {
+  id            String   @id @default(cuid())
+  customerName  String   @map("customer_name")
+  productName   String   @map("product_name")          // customer-facing product name
+  productCode   String?  @map("product_code")          // inhouse product code (optional)
+  inhouseName   String?  @map("inhouse_name")          // inhouse product name (optional)
+
+  // Specs & process
+  activeSpecs   String?  @map("active_specs")
+  carrier       String?
+  sectionName   String?  @map("section_name")
+
+  // Packing — unit level
+  unitQty       Float?   @map("unit_qty")              // e.g. 1.0 (from "1KG", "0.5L")
+  unitUom       String?  @map("unit_uom")              // KG / LTR / GM / ML
+  unitPackType  String?  @map("unit_pack_type")        // free-text description
+  primaryPack   String?  @map("primary_pack")          // LD Pouch / AL Pouch / Bottle etc.
+  secondaryPack String?  @map("secondary_pack")        // B-CBB / W-CBB / Drum etc.
+  unitsPerCS    Int?     @map("units_per_cs")           // primary packs per secondary pack
+  totalUom      String?  @default("KG") @map("total_uom")
+
+  // Label
+  labelType     String?  @map("label_type")
+  mrp           Float?
+
+  // Batch memory — last batch no + inferred shelf life
+  lastBatchNo   String?  @map("last_batch_no")
+  shelfLifeDays Int?     @map("shelf_life_days")       // EXP minus MFG in days (learned)
+
+  // Confidence counters
+  orderCount    Int      @default(1) @map("order_count")
+  lastOrderedAt DateTime @default(now()) @map("last_ordered_at")
+
+  @@unique([customerName, productName])
+  @@map("customer_product_profile")
+}
+
+// ─── ERP SALES (legacy tables from erp-migration.sql) ────────────────────────
+//
+// Models below are from the legacy flat-schema sales pipeline:
+//   ErpSalesOrder  — Legacy sales_orders table (Google Sheet / Excel sync)
+//                    NOTE: The active SalesOrder model above (sales_order table)
+//                    is the normalised replacement. This legacy table is kept for
+//                    historical data and the Excel/Sheet sync pipeline.
+//   OrderDispatch  — Dispatch records linked to legacy DI numbers
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ErpSalesOrder {
+  diNumber          String    @id @map("di_number") @db.VarChar(100)
+  company           String?   @db.VarChar(200)
+  orderType         String    @default("Domestic") @map("order_type") @db.VarChar(30)
+  status            String    @default("new") @db.VarChar(30)
+  customerName      String?   @map("customer_name") @db.VarChar(300)
+  orderDate         DateTime? @map("order_date") @db.Date
+  etd               DateTime? @db.Date
+  productCode       String?   @map("product_code") @db.VarChar(50)
+  productName       String?   @map("product_name") @db.VarChar(300)
+  orderQty          Decimal?  @map("order_qty") @db.Decimal(14, 3)
+  qtyUnit           String    @default("kg") @map("qty_unit") @db.VarChar(10)
+  activeIngredient  String?   @map("active_ingredient") @db.VarChar(200)
+  specifications    String?   @db.VarChar(200)
+  carrier           String?   @db.VarChar(200)
+  perUnitQtyPp      Decimal?  @map("per_unit_qty_pp") @db.Decimal(10, 3)
+  primaryPackType   String?   @map("primary_pack_type") @db.VarChar(200)
+  secondaryPackType String?   @map("secondary_pack_type") @db.VarChar(50)
+  labelType         String?   @map("label_type") @db.VarChar(200)
+  priority          String    @default("Normal") @db.VarChar(20)
+  salesStaff        String?   @map("sales_staff") @db.VarChar(200)
+  notes             String?
+  totalUnitsFp      Int?      @map("total_units_fp")
+  excelSyncedAt     DateTime? @map("excel_synced_at") @db.Timestamptz()
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  dispatches       OrderDispatch[]
+  productionPlans  ErpProductionPlan[]
+
+  @@map("sales_orders")
+}
+
+model OrderDispatch {
+  dispatchId    String    @id @default(dbgenerated("gen_random_uuid()")) @map("dispatch_id") @db.Uuid
+  diNumber      String?   @map("di_number") @db.VarChar(100)
+  invoiceNumber String?   @map("invoice_number") @db.VarChar(100)
+  invoiceDate   DateTime? @map("invoice_date") @db.Date
+  transportName String?   @map("transport_name") @db.VarChar(200)
+  dispatchedBy  String?   @map("dispatched_by") @db.Uuid
+  dispatchDate  DateTime? @map("dispatch_date") @db.Date
+  dispatchNotes String?   @map("dispatch_notes")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  salesOrder ErpSalesOrder? @relation(fields: [diNumber], references: [diNumber])
+
+  @@map("order_dispatch")
+}

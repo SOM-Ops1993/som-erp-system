@@ -1,0 +1,327 @@
+// ─── INVENTORY / RAW MATERIALS ───────────────────────────────────────────────
+//
+// Models in this file:
+//   RmMaster         — Raw material catalogue (item code, name, UOM, tracking type)
+//   BulkLocation     — Physical storage locations for bulk (non-pack) raw materials
+//   BulkLotEntry     — Individual lot records within a bulk location
+//   BulkLotSequence  — Auto-increment sequence for bulk lot numbers (per item/year)
+//   PrintMaster      — Label/pack records generated before physical inward
+//   InwardSession    — Grouping session for scanning packs during goods receipt
+//   Inward           — Individual pack inward transactions
+//   PackBalance      — Running balance per pack (total vs remaining qty)
+//   ContainerMaster  — Reusable containers (drums, IBC, etc.) with current fill level
+//   LotSequence      — Auto-increment sequence for pack lot numbers (per item/year)
+//   StockLedger      — Append-only ledger of all IN/OUT stock movements
+//   Outward          — Individual outward (issue) transactions
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── RAW MATERIAL MASTER ─────────────────────────────────────────────────────
+
+model RmMaster {
+  itemCode     String   @id @map("item_code")
+  itemName     String   @unique @map("item_name")
+  uom          String
+  trackingType String   @default("PACK") @map("tracking_type") // PACK | BULK
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("rm_master")
+}
+
+// ─── BULK TRACKING ───────────────────────────────────────────────────────────
+
+model BulkLocation {
+  locationId   String         @id @map("location_id")   // e.g. LOC-001, LOC-SHELF-A2
+  locationName String         @map("location_name")
+  itemCode     String         @map("item_code")
+  itemName     String         @map("item_name")
+  uom          String         @default("KG")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  lotEntries   BulkLotEntry[]
+
+  @@map("bulk_location")
+}
+
+model BulkLotEntry {
+  id           String       @id @default(cuid())
+  locationId   String       @map("location_id")
+  itemCode     String       @map("item_code")
+  itemName     String       @map("item_name")
+  lotNo        String       @map("lot_no")           // e.g. BULK-151464-2026-001
+  supplier     String?
+  invoiceNo    String?      @map("invoice_no")
+  receivedDate DateTime?    @map("received_date")
+  receivedQty  Float        @map("received_qty")
+  remainingQty Float        @map("remaining_qty")
+  uom          String       @default("KG")
+  status       String       @default("ACTIVE")       // ACTIVE | EXHAUSTED
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  location     BulkLocation @relation(fields: [locationId], references: [locationId])
+
+  @@map("bulk_lot_entry")
+}
+
+model BulkLotSequence {
+  itemCode String @map("item_code")
+  year     Int
+  seq      Int    @default(0)
+
+  @@id([itemCode, year])
+  @@map("bulk_lot_sequence")
+}
+
+// ─── PACK TRACKING ───────────────────────────────────────────────────────────
+
+model LotSequence {
+  itemCode String @map("item_code")
+  year     Int
+  seq      Int    @default(0)
+
+  @@id([itemCode, year])
+  @@map("lot_sequence")
+}
+
+model PrintMaster {
+  packId       String    @id @map("pack_id")
+  itemCode     String    @map("item_code")
+  itemName     String    @map("item_name")
+  lotNo        String    @map("lot_no")
+  bagNo        Int       @map("bag_no")
+  packQty      Float     @map("pack_qty")
+  uom          String
+  supplier     String?
+  invoiceNo    String?   @map("invoice_no")
+  receivedDate DateTime? @map("received_date")
+  status       String    @default("AWAITING_INWARD")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@unique([itemCode, lotNo, bagNo])
+  @@map("print_master")
+}
+
+model InwardSession {
+  sessionId       String   @id @default(cuid()) @map("session_id")
+  itemCode        String   @map("item_code")
+  lotNo           String   @map("lot_no")
+  warehouse       String
+  expectedBags    Int      @map("expected_bags")
+  scannedPackIds  String[] @map("scanned_pack_ids")
+  packWarehouses  Json     @default("{}") @map("pack_warehouses")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("inward_session")
+}
+
+model Inward {
+  id         String   @id @default(cuid())
+  packId     String   @map("pack_id")
+  itemCode   String   @map("item_code")
+  itemName   String   @map("item_name")
+  lotNo      String   @map("lot_no")
+  bagNo      Int      @map("bag_no")
+  qty        Float
+  inwardTime DateTime @default(now()) @map("inward_time")
+  warehouse  String
+
+  @@map("inward")
+}
+
+model PackBalance {
+  packId       String @id @map("pack_id")
+  itemCode     String @map("item_code")
+  totalQty     Float  @map("total_qty")
+  remainingQty Float  @map("remaining_qty")
+
+  @@map("pack_balance")
+}
+
+model ContainerMaster {
+  containerId String @id @map("container_id")
+  itemCode    String @unique @map("item_code")
+  itemName    String @map("item_name")
+  capacity    Float
+  currentQty  Float  @default(0) @map("current_qty")
+  uom         String
+
+  @@map("container_master")
+}
+
+// ─── STOCK LEDGER & OUTWARD ───────────────────────────────────────────────────
+
+model StockLedger {
+  id              String   @id @default(cuid())
+  itemCode        String   @map("item_code")
+  sourceId        String   @map("source_id")
+  transactionType String   @map("transaction_type")
+  inQty           Float    @default(0) @map("in_qty")
+  outQty          Float    @default(0) @map("out_qty")
+  balance         Float
+  reference       String?
+  timestamp       DateTime @default(now())
+
+  @@map("stock_ledger")
+}
+
+model Outward {
+  id         String   @id @default(cuid())
+  indentId   String?  @map("indent_id")
+  sourceId   String   @map("source_id")
+  sourceType String   @map("source_type")
+  rmCode     String   @map("rm_code")
+  qtyIssued  Float    @map("qty_issued")
+  remarks    String?
+  timestamp  DateTime @default(now())
+
+  @@map("outward")
+}
+
+// ─── ERP GATE & PACK TRACKING ─────────────────────────────────────────────────
+//
+// Models below come from erp-migration.sql and extend the inventory domain:
+//   GateInward        — Goods receipt entries at the gate
+//   ErpPack           — Individual physical packs/bags with FIFO tracking
+//   GateOutward       — Gate outward log (authorised & unauthorised exits)
+//   StockAdjustment   — Manual stock adjustments pending approval
+//   WarehouseTransfer — Pack movement between locations / plants
+//   FifoOverrideLog   — Audit trail of FIFO order overrides
+//   ErpContainer      — Reusable containers for decanting bulk materials
+//   DecantingLog      — Decanting operations (pack → container)
+//
+// ─────────────────────────────────────────────────────────────────────────────
+ 
+
+model ErpPack {
+  packId             String    @id @default(dbgenerated("gen_random_uuid()")) @map("pack_id") @db.Uuid
+  inwardId           String?   @map("inward_id") @db.Uuid
+  lotNumber          String    @map("lot_number") @db.VarChar(200)
+  packSeq            Int       @map("pack_seq")
+  itemCode           String?   @map("item_code") @db.VarChar(50)
+  supplierName       String?   @map("supplier_name") @db.VarChar(300)
+  invoiceNumber      String?   @map("invoice_number") @db.VarChar(100)
+  qtyReceived        Decimal   @map("qty_received") @db.Decimal(12, 3)
+  qtyRemaining       Decimal   @map("qty_remaining") @db.Decimal(12, 3)
+  unit               String    @db.VarChar(20)
+  inwardDate         DateTime  @default(dbgenerated("CURRENT_DATE")) @map("inward_date") @db.Date
+  qrConfirmed        Boolean   @default(false) @map("qr_confirmed")
+  qrConfirmedAt      DateTime? @map("qr_confirmed_at") @db.Timestamptz()
+  qrConfirmedBy      String?   @map("qr_confirmed_by") @db.Uuid
+  verifyScanRequired Boolean   @default(false) @map("verify_scan_required")
+  verifyScanDone     Boolean   @default(false) @map("verify_scan_done")
+  verifiedBy         String?   @map("verified_by") @db.Uuid
+  location           String?   @db.VarChar(200)
+  status             String    @default("quarantine") @db.VarChar(30)
+  // quarantine / active / partial / exhausted / adjusted
+  unitPrice          Decimal?  @map("unit_price") @db.Decimal(12, 4)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  inward           GateInward?        @relation(fields: [inwardId], references: [inwardId])
+  item             ErpItem?           @relation(fields: [itemCode], references: [itemCode])
+  stockAdjustments StockAdjustment[]
+  transfers        WarehouseTransfer[]
+  decantings       DecantingLog[]
+  bomIssuances     ErpBomIssuance[]
+
+  @@unique([lotNumber, packSeq])
+  @@map("erp_packs")
+}
+
+ 
+model StockAdjustment {
+  adjustmentId String    @id @default(dbgenerated("gen_random_uuid()")) @map("adjustment_id") @db.Uuid
+  packId       String?   @map("pack_id") @db.Uuid
+  itemCode     String?   @map("item_code") @db.VarChar(50)
+  reasonCode   String    @map("reason_code") @db.VarChar(50)
+  qtyBefore    Decimal   @map("qty_before") @db.Decimal(12, 3)
+  qtyAfter     Decimal   @map("qty_after") @db.Decimal(12, 3)
+  delta        Decimal   @db.Decimal(12, 3)
+  raisedBy     String?   @map("raised_by") @db.Uuid
+  approvedBy   String?   @map("approved_by") @db.Uuid
+  raisedAt     DateTime  @default(now()) @map("raised_at") @db.Timestamptz()
+  approvedAt   DateTime? @map("approved_at") @db.Timestamptz()
+  status       String    @default("pending") @db.VarChar(30)
+  notes        String?
+
+  pack ErpPack? @relation(fields: [packId], references: [packId])
+
+  @@map("stock_adjustments")
+}
+
+model WarehouseTransfer {
+  transferId    String    @id @default(dbgenerated("gen_random_uuid()")) @map("transfer_id") @db.Uuid
+  packId        String?   @map("pack_id") @db.Uuid
+  transferType  String    @map("transfer_type") @db.VarChar(30)
+  fromLocation  String?   @map("from_location") @db.VarChar(200)
+  toLocation    String?   @map("to_location") @db.VarChar(200)
+  fromPlantId   String?   @map("from_plant_id") @db.Uuid
+  toPlantId     String?   @map("to_plant_id") @db.Uuid
+  initiatedBy   String?   @map("initiated_by") @db.Uuid
+  receivedBy    String?   @map("received_by") @db.Uuid
+  status        String    @default("pending") @db.VarChar(30)
+  initiatedAt   DateTime  @default(now()) @map("initiated_at") @db.Timestamptz()
+  receivedAt    DateTime? @map("received_at") @db.Timestamptz()
+  notes         String?
+
+  pack ErpPack? @relation(fields: [packId], references: [packId])
+
+  @@map("warehouse_transfers")
+}
+
+model FifoOverrideLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobId       String?  @map("job_id") @db.Uuid
+  itemCode    String?  @map("item_code") @db.VarChar(50)
+  olderLot    String?  @map("older_lot") @db.VarChar(200)
+  olderQty    Decimal? @map("older_qty") @db.Decimal(12, 3)
+  selectedLot String?  @map("selected_lot") @db.VarChar(200)
+  overrideBy  String?  @map("override_by") @db.Uuid
+  reason      String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("fifo_override_log")
+}
+
+model ErpContainer {
+  containerId        String    @id @map("container_id") @db.VarChar(100)
+  containerQr        String?   @unique @map("container_qr") @db.VarChar(200)
+  itemCode           String?   @map("item_code") @db.VarChar(50)
+  location           String?   @db.VarChar(200)
+  maxCapacity        Decimal   @map("max_capacity") @db.Decimal(12, 3)
+  currentQty         Decimal   @default(0) @map("current_qty") @db.Decimal(12, 3)
+  uom                String?   @db.VarChar(20)
+  lowStockThreshold  Decimal   @default(0) @map("low_stock_threshold") @db.Decimal(12, 3)
+  lastReplenishedAt  DateTime? @map("last_replenished_at") @db.Timestamptz()
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  item       ErpItem?       @relation(fields: [itemCode], references: [itemCode])
+  decantings DecantingLog[]
+
+  @@map("erp_containers")
+}
+
+model DecantingLog {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourcePackId    String?   @map("source_pack_id") @db.Uuid
+  targetContainer String?   @map("target_container") @db.VarChar(100)
+  qtyEntered      Decimal   @map("qty_entered") @db.Decimal(12, 3)
+  qtyActual       Decimal?  @map("qty_actual") @db.Decimal(12, 3)
+  variancePct     Decimal?  @map("variance_pct") @db.Decimal(7, 4)
+  tolerancePct    Decimal?  @map("tolerance_pct") @db.Decimal(5, 2)
+  needsApproval   Boolean   @default(false) @map("needs_approval")
+  approvedBy      String?   @map("approved_by") @db.Uuid
+  approvedAt      DateTime? @map("approved_at") @db.Timestamptz()
+  performedBy     String?   @map("performed_by") @db.Uuid
+  status          String    @default("completed") @db.VarChar(30)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  sourcePack ErpPack?     @relation(fields: [sourcePackId], references: [packId])
+  container  ErpContainer? @relation(fields: [targetContainer], references: [containerId])
+
+  @@map("decanting_log")
+}

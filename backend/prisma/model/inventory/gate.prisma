@@ -1,0 +1,36 @@
+
+model GateInward {
+  inwardId     String    @id @default(dbgenerated("gen_random_uuid()")) @map("inward_id") @db.Uuid
+  supplierName String    @map("supplier_name") @db.VarChar(300)
+  invoiceNo    String?   @map("invoice_no")    @db.VarChar(100)
+  vehicleNo    String?   @map("vehicle_no")    @db.VarChar(50)
+  status       String    @default("pending")   @db.VarChar(50)
+  createdBy    String?   @map("created_by")    @db.Uuid
+  entryTime    DateTime? @map("entry_time")    @db.Timestamptz()
+  numPacks     Int?      @map("num_packs")
+
+  requestDelete  Boolean  @default(false) @map("request_delete")
+
+  createdAt    DateTime  @default(now())       @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  packs        ErpPack[]
+
+  @@map("gate_inward")
+}
+
+model GateOutward {
+  outwardId      String   @id @default(dbgenerated("gen_random_uuid()")) @map("outward_id") @db.Uuid
+  receiverName   String?  @map("receiver_name") @db.VarChar(300)
+  invoiceNo      String?  @map("invoice_no") @db.VarChar(100)
+  vehicleNo      String?  @map("vehicle_no") @db.VarChar(50)
+  status         String   @default("pending") @db.VarChar(50)
+  createdBy      String?  @map("created_by") @db.Uuid
+
+  requestDelete  Boolean  @default(false) @map("request_delete")
+
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("gate_outward")
+}

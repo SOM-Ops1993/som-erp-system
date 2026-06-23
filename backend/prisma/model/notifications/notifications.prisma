@@ -1,0 +1,57 @@
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+//
+// Models in this file:
+//   ErpNotification          — In-app notifications targeting roles or users
+//   NotificationEscalation   — Escalation trail when notifications go un-actioned
+//   NotificationDeliveryLog  — Delivery log per channel (email, SMS, push, etc.)
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ErpNotification {
+  notifId      String    @id @default(dbgenerated("gen_random_uuid()")) @map("notif_id") @db.Uuid
+  notifType    String    @map("notif_type") @db.VarChar(100)
+  title        String    @db.VarChar(300)
+  message      String
+  targetRole   String?   @map("target_role") @db.VarChar(50)
+  targetUserId String?   @map("target_user_id") @db.Uuid
+  refType      String?   @map("ref_type") @db.VarChar(50)
+  refId        String?   @map("ref_id") @db.VarChar(200)
+  isRead       Boolean   @default(false) @map("is_read")
+  isActioned   Boolean   @default(false) @map("is_actioned")
+  actionedAt   DateTime? @map("actioned_at") @db.Timestamptz()
+  actionedBy   String?   @map("actioned_by") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  targetUser   User?                    @relation(fields: [targetUserId], references: [userId])
+  escalations  NotificationEscalation[]
+  deliveryLogs NotificationDeliveryLog[]
+
+  @@map("notifications")
+}
+
+model NotificationEscalation {
+  id          BigInt    @id @default(autoincrement())
+  notifId     String?   @map("notif_id") @db.Uuid
+  level       Int
+  escalatedTo String?   @map("escalated_to") @db.Uuid
+  escalatedAt DateTime  @default(now()) @map("escalated_at") @db.Timestamptz()
+  notes       String?
+
+  notification ErpNotification? @relation(fields: [notifId], references: [notifId])
+
+  @@map("notification_escalations")
+}
+
+model NotificationDeliveryLog {
+  id           BigInt    @id @default(autoincrement())
+  notifId      String?   @map("notif_id") @db.Uuid
+  channel      String    @db.VarChar(30)
+  status       String    @default("sent") @db.VarChar(20)
+  externalId   String?   @map("external_id") @db.VarChar(200)
+  sentAt       DateTime  @default(now()) @map("sent_at") @db.Timestamptz()
+  errorMessage String?   @map("error_message")
+
+  notification ErpNotification? @relation(fields: [notifId], references: [notifId])
+
+  @@map("notification_delivery_log")
+}

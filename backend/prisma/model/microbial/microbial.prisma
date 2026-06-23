@@ -1,0 +1,166 @@
+// ─── MICROBIAL MODULE ─────────────────────────────────────────────────────────
+//
+// Models in this file:
+//   MicrobialStrain          — Strain master (decay constants, viability thresholds)
+//   MicrobialContainer       — Cold-storage containers holding live culture
+//   MicrobialTransaction     — Dispatches from containers to production jobs
+//   MicrobeMaster            — Microbial SFG product catalogue (microbe_master)
+//   MicrobialSfgContainerSeq — Sequence counter per (microbe_code, type_code)
+//   MicrobialSfgContainer    — SFG containers for microbial powders/granules
+//   MicrobialSfgInward       — Inward records for microbial SFG batches
+//   MicrobialSfgAllocation   — Allocation of SFG stock to production plans
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model MicrobialStrain {
+  strainId           String   @id @default(dbgenerated("gen_random_uuid()")) @map("strain_id") @db.Uuid
+  strainName         String   @map("strain_name") @db.VarChar(200)
+  decayK             Decimal  @default(0.01) @map("decay_k") @db.Decimal(10, 6)
+  optimalTempC       Decimal? @map("optimal_temp_c") @db.Decimal(5, 2)
+  minViableCfuPerMl  Decimal? @map("min_viable_cfu_per_ml") @db.Decimal(15, 2)
+  notes              String?
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  containers MicrobialContainer[]
+  products   ErpProduct[]
+
+  @@map("microbial_strains")
+}
+
+model MicrobialContainer {
+  containerId      String    @id @default(dbgenerated("gen_random_uuid()")) @map("container_id") @db.Uuid
+  strainId         String    @map("strain_id") @db.Uuid
+  locationRoom     String?   @map("location_room") @db.VarChar(200)
+  locationPosition String?   @map("location_position") @db.VarChar(100)
+  volumeLitres     Decimal   @map("volume_litres") @db.Decimal(10, 3)
+  mfgCfuPerMl      Decimal   @map("mfg_cfu_per_ml") @db.Decimal(15, 2)
+  mfgDate          DateTime  @map("mfg_date") @db.Date
+  expiryDate       DateTime  @map("expiry_date") @db.Date
+  storageTempC     Decimal?  @map("storage_temp_c") @db.Decimal(5, 2)
+  status           String    @default("healthy") @db.VarChar(20)
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  strain       MicrobialStrain      @relation(fields: [strainId], references: [strainId])
+  transactions MicrobialTransaction[]
+
+  @@map("microbial_containers")
+}
+
+model MicrobialTransaction {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  containerId         String    @map("container_id") @db.Uuid
+  jobId               String?   @map("job_id") @db.Uuid
+  volumeDispatchedL   Decimal   @map("volume_dispatched_l") @db.Decimal(10, 3)
+  cfuPerMlAtDispatch  Decimal?  @map("cfu_per_ml_at_dispatch") @db.Decimal(15, 2)
+  dispatchTempC       Decimal?  @map("dispatch_temp_c") @db.Decimal(5, 2)
+  dispatchedBy        String?   @map("dispatched_by") @db.Uuid
+  receiverName        String?   @map("receiver_name") @db.VarChar(200)
+  dispatchDate        DateTime  @default(now()) @map("dispatch_date") @db.Timestamptz()
+  receiptConfirmed    Boolean   @default(false) @map("receipt_confirmed")
+  receiptConfirmedAt  DateTime? @map("receipt_confirmed_at") @db.Timestamptz()
+  receiptNotes        String?   @map("receipt_notes")
+  actualCfuOnReceipt  Decimal?  @map("actual_cfu_on_receipt") @db.Decimal(15, 2)
+
+  container MicrobialContainer @relation(fields: [containerId], references: [containerId])
+
+  @@map("microbial_transactions")
+}
+
+// ─── MICROBIAL SFG (runtime-created tables) ───────────────────────────────────
+
+model MicrobeMaster {
+  microbeId   String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("microbe_id")
+  microbeName String   @map("microbe_name")
+  microbeCode String   @unique @map("microbe_code")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  containers MicrobialSfgContainer[]
+  inwards    MicrobialSfgInward[]
+
+  @@map("microbe_master")
+}
+
+model MicrobialSfgContainerSeq {
+  microbeCode String @map("microbe_code")
+  typeCode    String @map("type_code")
+  seq         Int    @default(0)
+
+  @@id([microbeCode, typeCode])
+  @@map("microbial_sfg_container_seq")
+}
+
+model MicrobialSfgContainer {
+  containerId  String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("container_id")
+  containerCode String  @unique @map("container_code")
+  microbeId    String?  @map("microbe_id")
+  microbeCode  String   @map("microbe_code")
+  microbeName  String   @map("microbe_name")
+  microbeType  String   @map("microbe_type")
+  typeCode     String   @map("type_code")
+  seqNo        Int      @default(1) @map("seq_no")
+  location     String?
+  capacityKg   Float?   @map("capacity_kg")
+  currentQtyKg Float    @default(0) @map("current_qty_kg")
+  fillStatus   String   @default("EMPTY") @map("fill_status")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  microbe  MicrobeMaster?       @relation(fields: [microbeId], references: [microbeId])
+  inwards  MicrobialSfgInward[]
+
+  @@map("microbial_sfg_container")
+}
+
+model MicrobialSfgInward {
+  inwardId          String   @id @default(dbgenerated("gen_random_uuid()::text")) @map("inward_id")
+  containerId       String?  @map("container_id")
+  containerCode     String   @map("container_code")
+  microbeId         String?  @map("microbe_id")
+  microbeCode       String   @map("microbe_code")
+  microbeName       String   @map("microbe_name")
+  microbeType       String   @map("microbe_type")
+  inhouseCfuPerG    Float    @map("inhouse_cfu_per_g")
+  biomassBatchCode  String   @map("biomass_batch_code")
+  dateOfHarvest     DateTime @map("date_of_harvest") @db.Date
+  totalQtyKg        Float    @map("total_qty_kg")
+  remainingQtyKg    Float    @map("remaining_qty_kg")
+  location          String?
+  moisture          Float?
+  shelfLifeDays     Int?     @map("shelf_life_days")
+  fillStatus        String   @default("PARTIAL") @map("fill_status")
+  status            String   @default("ACTIVE")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  container  MicrobialSfgContainer? @relation(fields: [containerId], references: [containerId])
+  microbe    MicrobeMaster?         @relation(fields: [microbeId], references: [microbeId])
+  allocations MicrobialSfgAllocation[]
+
+  @@map("microbial_sfg_inward")
+}
+
+model MicrobialSfgAllocation {
+  allocationId         String    @id @default(dbgenerated("gen_random_uuid()::text")) @map("allocation_id")
+  planId               String    @map("plan_id")
+  inwardId             String?   @map("inward_id")
+  containerCode        String    @map("container_code")
+  microbeCode          String    @map("microbe_code")
+  microbeName          String    @map("microbe_name")
+  microbeType          String    @map("microbe_type")
+  allocatedQtyKg       Float     @map("allocated_qty_kg")
+  multiplicationFactor Float     @default(1) @map("multiplication_factor")
+  requiredCfuPerG      Float?    @map("required_cfu_per_g")
+  inhouseCfuPerG       Float?    @map("inhouse_cfu_per_g")
+  orderQtyKg           Float?    @map("order_qty_kg")
+  status               String    @default("RESERVED")
+  notifiedAt           DateTime? @map("notified_at") @db.Timestamptz()
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  inward MicrobialSfgInward? @relation(fields: [inwardId], references: [inwardId])
+
+  @@map("microbial_sfg_allocation")
+}

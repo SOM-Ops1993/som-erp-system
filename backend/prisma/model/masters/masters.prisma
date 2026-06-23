@@ -1,0 +1,230 @@
+// ─── ERP MASTER DATA ──────────────────────────────────────────────────────────
+//
+// Models in this file (all mapped to erp-migration.sql tables):
+//   ReasonCode            — Configurable reason codes by category
+//   ErpSupplier           — Supplier master
+//   ErpPlant              — Plant/facility master
+//   ErpEquipment          — Equipment catalogue with capacity and sterilisation flags
+//   ErpItem               — Item (RM/PM/FG) catalogue with UOM and reorder levels
+//   Customer              — Customer master
+//   ErpProduct            — Finished-product catalogue with BOM and plant linkage
+//   ErpBomHeader          — BOM header (versioned per product)
+//   ErpBomLineFormulation — BOM formulation ingredient lines
+//   ErpBomLinePacking     — BOM packing material lines
+//   GateLotSequence       — Per-item/year lot number sequence counter
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ReasonCode {
+  codeId   Int     @id @default(autoincrement()) @map("code_id")
+  category String  @db.VarChar(100)
+  code     String  @db.VarChar(50)
+  label    String  @db.VarChar(200)
+  isActive Boolean @default(true) @map("is_active")
+
+  @@unique([category, code])
+  @@map("reason_codes")
+}
+
+model ErpSupplier {
+  supplierId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("supplier_id") @db.Uuid
+  supplierName String   @map("supplier_name") @db.VarChar(200)
+  gstin        String?  @db.VarChar(20)
+  phone        String?  @db.VarChar(20)
+  email        String?  @db.VarChar(200)
+  address      String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  items ErpItem[]
+
+  @@map("erp_suppliers")
+}
+
+model ErpPlant {
+  plantId    String   @id @default(dbgenerated("gen_random_uuid()")) @map("plant_id") @db.Uuid
+  plantName  String   @map("plant_name") @db.VarChar(200)
+  plantCode  String   @unique @map("plant_code") @db.VarChar(20)
+  location   String?  @db.VarChar(200)
+  plantType  String   @map("plant_type") @db.VarChar(50)
+  // formulation / packing / both
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  equipment    ErpEquipment[]
+  products     ErpProduct[]
+  altProducts  ErpProduct[]   @relation("AltPlant")
+
+  @@map("erp_plants")
+}
+
+model ErpEquipment {
+  equipmentId           String   @id @default(dbgenerated("gen_random_uuid()")) @map("equipment_id") @db.Uuid
+  plantId               String?  @map("plant_id") @db.Uuid
+  equipmentName         String   @map("equipment_name") @db.VarChar(200)
+  equipmentCode         String   @unique @map("equipment_code") @db.VarChar(50)
+  equipmentType         String   @map("equipment_type") @db.VarChar(100)
+  workingVolume         Decimal? @map("working_volume") @db.Decimal(12, 3)
+  workingVolumeUnit     String   @default("KG") @map("working_volume_unit") @db.VarChar(20)
+  cleaningTimeHrs       Decimal  @default(0) @map("cleaning_time_hrs") @db.Decimal(5, 2)
+  requiresSterilisation Boolean  @default(false) @map("requires_sterilisation")
+  status                String   @default("active") @db.VarChar(30)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  plant ErpPlant?       @relation(fields: [plantId], references: [plantId])
+  jobs  ErpProductionJob[]
+
+  @@map("erp_equipment")
+}
+
+model ErpItem {
+  itemCode              String   @id @map("item_code") @db.VarChar(50)
+  itemName              String   @map("item_name") @db.VarChar(300)
+  itemCategory          String   @map("item_category") @db.VarChar(30)
+  // RM / PM / FG / consumable
+  uom                   String   @db.VarChar(20)
+  warehouseZone         String?  @map("warehouse_zone") @db.VarChar(100)
+  reorderLevel          Decimal  @default(0) @map("reorder_level") @db.Decimal(12, 3)
+  decantingTolerancePct Decimal  @default(0.5) @map("decanting_tolerance_pct") @db.Decimal(5, 2)
+  isMicrobial           Boolean  @default(false) @map("is_microbial")
+  supplierDefault       String?  @map("supplier_default") @db.Uuid
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  supplier            ErpSupplier?            @relation(fields: [supplierDefault], references: [supplierId])
+  bomLinesFormulation ErpBomLineFormulation[]
+  bomLinesPacking     ErpBomLinePacking[]
+  containers          ErpContainer[]
+  packs               ErpPack[]
+
+  @@map("erp_items")
+}
+
+model Customer {
+  customerId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("customer_id") @db.Uuid
+  customerName String   @map("customer_name") @db.VarChar(300)
+  customerCode String?  @unique @map("customer_code") @db.VarChar(50)
+  gstin        String?  @db.VarChar(20)
+  address      String?
+  state        String?  @db.VarChar(100)
+  phone        String?  @db.VarChar(20)
+  email        String?  @db.VarChar(200)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@map("customers")
+}
+
+model ErpProduct {
+  productCode              String   @id @map("product_code") @db.VarChar(50)
+  productName              String   @map("product_name") @db.VarChar(300)
+  productCategory          String?  @map("product_category") @db.VarChar(100)
+  plantId                  String?  @map("plant_id") @db.Uuid
+  alternatePlantId         String?  @map("alternate_plant_id") @db.Uuid
+  altPlantRequiresApproval Boolean  @default(false) @map("alt_plant_requires_approval")
+  formulationType          String?  @map("formulation_type") @db.VarChar(100)
+  shelfLifeDays            Int?     @map("shelf_life_days")
+  consolidationWindowDays  Int      @default(3) @map("consolidation_window_days")
+  isMicrobial              Boolean  @default(false) @map("is_microbial")
+  microbialStrainId        String?  @map("microbial_strain_id") @db.Uuid
+  status                   String   @default("active") @db.VarChar(20)
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  plant           ErpPlant?       @relation(fields: [plantId], references: [plantId])
+  alternatePlant  ErpPlant?       @relation("AltPlant", fields: [alternatePlantId], references: [plantId])
+  microbialStrain MicrobialStrain? @relation(fields: [microbialStrainId], references: [strainId])
+  bomHeaders      ErpBomHeader[]
+
+  @@map("erp_products")
+}
+
+model ErpBomHeader {
+  bomId         String    @id @default(dbgenerated("gen_random_uuid()")) @map("bom_id") @db.Uuid
+  productCode   String?   @map("product_code") @db.VarChar(50)
+  bomVersion    String    @map("bom_version") @db.VarChar(20)
+  effectiveDate DateTime  @map("effective_date") @db.Date
+  approvedBy    String?   @map("approved_by") @db.Uuid
+  status        String    @default("active") @db.VarChar(20)
+  yieldPct      Decimal   @default(98.00) @map("yield_pct") @db.Decimal(5, 2)
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  product        ErpProduct?             @relation(fields: [productCode], references: [productCode])
+  approvedByUser User?                   @relation(fields: [approvedBy], references: [userId])
+  formulation    ErpBomLineFormulation[]
+  packing        ErpBomLinePacking[]
+
+  @@unique([productCode, bomVersion])
+  @@map("bom_headers")
+}
+
+model ErpBomLineFormulation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bomId      String   @map("bom_id") @db.Uuid
+  itemCode   String?  @map("item_code") @db.VarChar(50)
+  qtyPerUnit Decimal  @map("qty_per_unit") @db.Decimal(14, 6)
+  unit       String   @db.VarChar(20)
+  isCritical Boolean  @default(false) @map("is_critical")
+  seqNo      Int      @default(1) @map("seq_no")
+
+  bom  ErpBomHeader @relation(fields: [bomId], references: [bomId], onDelete: Cascade)
+  item ErpItem?     @relation(fields: [itemCode], references: [itemCode])
+
+  @@map("bom_lines_formulation")
+}
+
+model ErpBomLinePacking {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bomId      String   @map("bom_id") @db.Uuid
+  itemCode   String?  @map("item_code") @db.VarChar(50)
+  qtyPerUnit Decimal  @map("qty_per_unit") @db.Decimal(14, 6)
+  unit       String   @db.VarChar(20)
+  seqNo      Int      @default(1) @map("seq_no")
+
+  bom  ErpBomHeader @relation(fields: [bomId], references: [bomId], onDelete: Cascade)
+  item ErpItem?     @relation(fields: [itemCode], references: [itemCode])
+
+  @@map("bom_lines_packing")
+}
+
+model GateLotSequence {
+  itemCode String @map("item_code") @db.VarChar(50)
+  year     Int
+  seq      Int    @default(0)
+
+  @@id([itemCode, year])
+  @@map("gate_lot_sequences")
+}
+
+model PackingMaterial {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemCode     String   @unique @map("item_code") @db.VarChar(50)
+  itemName     String   @map("item_name") @db.VarChar(500)
+  // BOTTLES_TINS | POUCHES_BAGS | CORRUGATED_BOXES
+  category     String   @map("category") @db.VarChar(50)
+  subType      String?  @map("sub_type") @db.VarChar(50)
+  material     String?  @db.VarChar(100)
+  capacity     Decimal? @db.Decimal(12, 3)
+  capacityUnit String?  @map("capacity_unit") @db.VarChar(10)
+  // Outer dimensions in mm (OD)
+  length       Decimal? @db.Decimal(12, 2)
+  width        Decimal? @db.Decimal(12, 2)
+  height       Decimal? @db.Decimal(12, 2)
+  ply          Int?
+  shape        String?  @db.VarChar(50)
+  color        String?  @db.VarChar(100)
+  laminate     String?  @db.VarChar(100)
+  contentsSpec String?  @map("contents_spec") @db.VarChar(200)
+  packCount    Int?     @map("pack_count")
+  uom          String   @default("Nos") @db.VarChar(20)
+  notes        String?  @db.VarChar(500)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("packing_materials")
+}

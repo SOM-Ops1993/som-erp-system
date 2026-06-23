@@ -1,0 +1,26 @@
+// ─── BASE CONFIGURATION ───────────────────────────────────────────────────────
+//
+// This is the root Prisma schema. All models are split into modules under:
+//   prisma/model/
+//     ├── inventory/     — Raw materials, stock, inward/outward, containers
+//     ├── production/    — Batches, stages, SFG, equipment, recipes
+//     ├── sales/         — Sales orders, customers, customer profiles
+//     ├── planning/      — Production plans, BOM sends, planner logs
+//     ├── hr/            — Employees, companies, role permissions
+//     └── system/        — Sheet sync logs, sequences
+//
+// To use multiple .prisma files, run Prisma with the --schema flag pointing
+// to this root, or configure prisma.schema in package.json as an array.
+// (Prisma v5+ supports multi-file schemas via `prismaSchemaFolder` preview feature)
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
