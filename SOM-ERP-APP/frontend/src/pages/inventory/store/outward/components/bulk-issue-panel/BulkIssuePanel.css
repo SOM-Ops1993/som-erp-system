@@ -1,0 +1,10 @@
+/* BulkIssuePanel */
+
+.bip-scanner-wrap {
+  max-width: 400px;
+}
+
+.bip-scan-target {
+  width: 180px;
+  height: 180px;
+}

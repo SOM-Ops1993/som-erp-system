@@ -1,0 +1,12 @@
+/* ── Footer strip ── */
+.sf-root {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  color: #334155;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sf-root--open      { padding: 8px 14px; text-align: left; }
+.sf-root--collapsed { padding: 8px 0;    text-align: center; }

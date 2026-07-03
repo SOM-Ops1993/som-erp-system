@@ -14,12 +14,11 @@ import {
   checkEscalations,
   createNotification,
 } from "./notification-service.js";
-import { runPlanningEngine } from "../modules/planning/plan-engine/plan-engine.controller.js";
+import { runPlanningEngine } from "../modules/planning/plan-engine/create/plan-engine.controller.js";
 
 const MIN = 60 * 1000;
 const HR = 60 * MIN;
 
-// ── Schedule a daily job at a specific HH:MM ─────────────────────────────────
 function scheduleDailyAt(hour, minute, fn, log, label) {
   function msUntilNext() {
     const now = new Date();
@@ -30,7 +29,7 @@ function scheduleDailyAt(hour, minute, fn, log, label) {
   }
   function run() {
     fn().catch((e) => log.error(`[CRON ${label}]`, e.message));
-    setTimeout(run, msUntilNext() + 1000); // schedule next day
+    setTimeout(run, msUntilNext() + 1000);
   }
   setTimeout(run, msUntilNext());
   log.info &&
@@ -47,11 +46,9 @@ export function startCronJobs(fastify) {
     8,
     30,
     async () => {
-      log.info &&
-        log.info("[CRON planning] Running scheduled planning engine…");
+      log.info && log.info("[CRON planning] Running scheduled planning engine…");
       const result = await runPlanningEngine("SCHEDULED");
-      log.info &&
-        log.info(`[CRON planning] Done — ${result.plansCreated} plans created`);
+      log.info && log.info(`[CRON planning] Done — ${result.plansCreated} plans created`);
     },
     log,
     "planning",
@@ -67,36 +64,43 @@ export function startCronJobs(fastify) {
   }, 15 * MIN);
 
   // ── 2. QR confirmation timeout: every 30 min ──────────────────────────────
-  //    Flag gate inwards that were created >4h ago with status qr_pending
   setInterval(async () => {
     try {
       const fourHoursAgo = new Date(Date.now() - 4 * HR);
-      const pending = await prisma.$queryRaw`
-        SELECT gi.inward_id, gi.item_name, gi.lot_number, gi.created_at
-        FROM gate_inward gi
-        WHERE gi.status = 'qr_pending'
-          AND gi.created_at < ${fourHoursAgo}
-          AND NOT EXISTS (
-            SELECT 1 FROM notifications n
-            WHERE n.ref_type = 'gate_inward'
-              AND n.ref_id = gi.inward_id::text
-              AND n.notif_type = 'qr_pending'
-              AND n.created_at > ${fourHoursAgo}
-          )
-        LIMIT 20
-      `;
+
+      // Pending gate inwards older than 4h
+      const pending = await prisma.gateInward.findMany({
+        where:  { status: 'qr_pending', createdAt: { lt: fourHoursAgo } },
+        select: { inwardId: true, supplierName: true, createdAt: true },
+        take:   20,
+      })
+
+      if (!pending.length) return
+
+      // Recent notifications already sent for these gate inwards
+      const recentNotifs = await prisma.erpNotification.findMany({
+        where: {
+          refType:   'gate_inward',
+          notifType: 'qr_pending',
+          createdAt: { gt: fourHoursAgo },
+          refId:     { in: pending.map(gi => gi.inwardId) },
+        },
+        select: { refId: true },
+      })
+      const notifiedIds = new Set(recentNotifs.map(n => n.refId))
+
       for (const gi of pending) {
+        if (notifiedIds.has(gi.inwardId)) continue
         await createNotification({
-          type: "qr_pending",
-          title: "QR Confirmation Overdue",
-          message: `Gate inward for ${gi.item_name || gi.lot_number} created at ${new Date(gi.created_at).toLocaleString("en-IN")} has no QR confirmation. Pack is in quarantine.`,
+          type:       "qr_pending",
+          title:      "QR Confirmation Overdue",
+          message:    `Gate inward for ${gi.supplierName || gi.inwardId} created at ${new Date(gi.createdAt).toLocaleString("en-IN")} has no QR confirmation. Pack is in quarantine.`,
           targetRole: "store_person",
-          refType: "gate_inward",
-          refId: gi.inward_id,
+          refType:    "gate_inward",
+          refId:      gi.inwardId,
         });
       }
-      if (pending.length)
-        log.info(`[CRON qr_pending] Flagged ${pending.length} entries`);
+      if (pending.length) log.info(`[CRON qr_pending] Processed ${pending.length} entries`);
     } catch (e) {
       log.error("[CRON qr_pending]", e.message);
     }
@@ -115,35 +119,38 @@ export function startCronJobs(fastify) {
   setInterval(async () => {
     try {
       const yesterday = new Date(Date.now() - 24 * HR);
-      const unconfirmed = await prisma.$queryRaw`
-        SELECT mt.id, mt.container_id, mt.receiver_name, mt.dispatch_date, mc.strain_id
-        FROM microbial_transactions mt
-        JOIN microbial_containers mc ON mc.container_id = mt.container_id
-        WHERE mt.receipt_confirmed = false
-          AND mt.dispatch_date < ${yesterday}
-          AND NOT EXISTS (
-            SELECT 1 FROM notifications n
-            WHERE n.ref_type = 'microbial_transaction'
-              AND n.ref_id = mt.id::text
-              AND n.notif_type = 'microbial_unconfirmed'
-              AND n.created_at > ${yesterday}
-          )
-        LIMIT 20
-      `;
+
+      const unconfirmed = await prisma.microbialTransaction.findMany({
+        where:   { receiptConfirmed: false, dispatchDate: { lt: yesterday } },
+        include: { container: { include: { strain: { select: { strainId: true } } } } },
+        take:    20,
+      })
+
+      if (!unconfirmed.length) return
+
+      const recentNotifs = await prisma.erpNotification.findMany({
+        where: {
+          refType:   'microbial_transaction',
+          notifType: 'microbial_unconfirmed',
+          createdAt: { gt: yesterday },
+          refId:     { in: unconfirmed.map(tx => tx.id) },
+        },
+        select: { refId: true },
+      })
+      const notifiedIds = new Set(recentNotifs.map(n => n.refId))
+
       for (const tx of unconfirmed) {
+        if (notifiedIds.has(tx.id)) continue
         await createNotification({
-          type: "microbial_unconfirmed",
-          title: "Microbial Dispatch Unconfirmed",
-          message: `Dispatch to "${tx.receiver_name}" on ${new Date(tx.dispatch_date).toLocaleDateString("en-IN")} has not been confirmed by receiver. Please follow up immediately.`,
+          type:       "microbial_unconfirmed",
+          title:      "Microbial Dispatch Unconfirmed",
+          message:    `Dispatch to "${tx.receiverName}" on ${new Date(tx.dispatchDate).toLocaleDateString("en-IN")} has not been confirmed by receiver. Please follow up immediately.`,
           targetRole: "store_manager",
-          refType: "microbial_transaction",
-          refId: tx.id,
+          refType:    "microbial_transaction",
+          refId:      tx.id,
         });
       }
-      if (unconfirmed.length)
-        log.info(
-          `[CRON microbial_unconfirmed] ${unconfirmed.length} dispatches flagged`,
-        );
+      if (unconfirmed.length) log.info(`[CRON microbial_unconfirmed] ${unconfirmed.length} dispatches processed`);
     } catch (e) {
       log.error("[CRON microbial_unconfirmed]", e.message);
     }
@@ -153,30 +160,38 @@ export function startCronJobs(fastify) {
   setInterval(async () => {
     try {
       const now = new Date();
-      const overdue = await prisma.$queryRaw`
-        SELECT pj.job_id, pj.batch_code, pj.expected_start_time, ep.product_code
-        FROM production_jobs pj
-        JOIN production_plans pp ON pp.plan_id = pj.plan_id
-        JOIN erp_products ep ON ep.product_code = pj.product_code
-        WHERE pj.status = 'pending'
-          AND pj.expected_start_time < ${now}
-          AND pp.status = 'published'
-          AND NOT EXISTS (
-            SELECT 1 FROM notifications n
-            WHERE n.ref_type = 'production_job'
-              AND n.ref_id = pj.job_id::text
-              AND n.notif_type = 'batch_not_started'
-          )
-        LIMIT 20
-      `;
+
+      const overdue = await prisma.erpProductionJob.findMany({
+        where: {
+          status:            'pending',
+          expectedStartTime: { lt: now },
+          plan:              { status: 'published' },
+        },
+        include: { plan: { select: { diNumber: true } } },
+        take:    20,
+      })
+
+      if (!overdue.length) return
+
+      const existingNotifs = await prisma.erpNotification.findMany({
+        where: {
+          refType:   'production_job',
+          notifType: 'batch_not_started',
+          refId:     { in: overdue.map(j => j.jobId) },
+        },
+        select: { refId: true },
+      })
+      const notifiedIds = new Set(existingNotifs.map(n => n.refId))
+
       for (const job of overdue) {
+        if (notifiedIds.has(job.jobId)) continue
         await createNotification({
-          type: "batch_not_started",
-          title: "Batch Not Started",
-          message: `Batch ${job.batch_code} for ${job.product_code} was expected to start at ${new Date(job.expected_start_time).toLocaleString("en-IN")} but has not been started.`,
+          type:       "batch_not_started",
+          title:      "Batch Not Started",
+          message:    `Batch ${job.batchCode} for ${job.productCode} was expected to start at ${new Date(job.expectedStartTime).toLocaleString("en-IN")} but has not been started.`,
           targetRole: "plant_supervisor",
-          refType: "production_job",
-          refId: job.job_id,
+          refType:    "production_job",
+          refId:      job.jobId,
         });
       }
     } catch (e) {
@@ -189,42 +204,43 @@ export function startCronJobs(fastify) {
 
 // ─── CFU Status Updater ───────────────────────────────────────────────────────
 async function updateCfuStatuses(log) {
-  const containers = await prisma.$queryRaw`
-    SELECT mc.container_id, mc.mfg_cfu_per_ml, mc.mfg_date, mc.expiry_date,
-           ms.decay_k, mc.status
-    FROM microbial_containers mc
-    JOIN microbial_strains ms ON ms.strain_id = mc.strain_id
-    WHERE mc.status != 'exhausted'
-  `;
+  const containers = await prisma.microbialContainer.findMany({
+    where:   { status: { not: 'exhausted' } },
+    include: { strain: { select: { decayK: true } } },
+  })
+
   const today = new Date();
   let updated = 0;
+
   for (const c of containers) {
-    const daysSinceMfg = (today - new Date(c.mfg_date)) / (1000 * 86400);
-    const currentCfu = c.mfg_cfu_per_ml * Math.exp(-c.decay_k * daysSinceMfg);
-    const cfuRatio = currentCfu / c.mfg_cfu_per_ml;
-    const daysToExpiry = (new Date(c.expiry_date) - today) / (1000 * 86400);
+    const daysSinceMfg = (today - new Date(c.mfgDate)) / (1000 * 86400);
+    const currentCfu   = Number(c.mfgCfuPerMl) * Math.exp(-Number(c.strain.decayK) * daysSinceMfg);
+    const cfuRatio     = currentCfu / Number(c.mfgCfuPerMl);
+    const daysToExpiry = (new Date(c.expiryDate) - today) / (1000 * 86400);
 
     let newStatus = "healthy";
     if (cfuRatio < 0.3 || daysToExpiry < 10) newStatus = "at_risk";
     else if (cfuRatio < 0.5 || daysToExpiry < 30) newStatus = "watch";
 
     if (newStatus !== c.status) {
-      await prisma.$executeRaw`
-        UPDATE microbial_containers SET status = ${newStatus}, updated_at = NOW()
-        WHERE container_id = ${c.container_id}::uuid
-      `;
+      await prisma.microbialContainer.update({
+        where: { containerId: c.containerId },
+        data:  { status: newStatus },
+      });
       updated++;
+
       if (newStatus === "at_risk" || newStatus === "watch") {
         await createNotification({
-          type: "cfu_threshold",
-          title: `Microbial Container Status: ${newStatus.toUpperCase()}`,
-          message: `Container ${c.container_id} CFU ratio dropped to ${(cfuRatio * 100).toFixed(1)}%. Expiry: ${new Date(c.expiry_date).toLocaleDateString("en-IN")}. Status changed to ${newStatus}.`,
+          type:       "cfu_threshold",
+          title:      `Microbial Container Status: ${newStatus.toUpperCase()}`,
+          message:    `Container ${c.containerId} CFU ratio dropped to ${(cfuRatio * 100).toFixed(1)}%. Expiry: ${new Date(c.expiryDate).toLocaleDateString("en-IN")}. Status changed to ${newStatus}.`,
           targetRole: "store_manager",
-          refType: "microbial_container",
-          refId: c.container_id,
+          refType:    "microbial_container",
+          refId:      c.containerId,
         });
       }
     }
   }
+
   if (updated) log?.info(`[CRON cfu] Updated ${updated} container statuses`);
 }

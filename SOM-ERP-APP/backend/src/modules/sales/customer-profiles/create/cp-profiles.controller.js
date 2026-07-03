@@ -42,7 +42,7 @@ const seedCustomerProfiles = async (req, res) => {
     }
     return res.json({ success: true, created, updated });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -127,7 +127,7 @@ const upsertManyCpProfiles = async (req, res) => {
     }
     return res.json({ success: true, saved });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

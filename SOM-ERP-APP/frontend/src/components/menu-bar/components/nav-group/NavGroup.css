@@ -1,0 +1,100 @@
+/* ── Root ── */
+.ng-root {
+  margin-bottom: 1px;
+}
+
+/* ── Group header button ── */
+.ng-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.ng-btn--open {
+  padding: 6px 14px 5px;
+  justify-content: flex-start;
+}
+
+.ng-btn--collapsed {
+  padding: 9px 0;
+  justify-content: center;
+}
+
+.ng-btn--active {
+  background: rgba(99, 102, 241, 0.1);
+  border-left-color: #6366f1;
+}
+
+.ng-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Group label ── */
+.ng-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #6b7a8d;
+}
+
+.ng-label--active {
+  color: #cbd5e1;
+}
+
+/* ── Chevron icon ── */
+.ng-chevron {
+  color: #3d4a5c;
+  display: flex;
+  transition: transform 0.2s ease;
+}
+
+.ng-chevron--open {
+  transform: rotate(0deg);
+}
+
+.ng-chevron--closed {
+  transform: rotate(-90deg);
+}
+
+/* ── Collapsed group icon ── */
+.ng-icon {
+  display: flex;
+  transition: color 0.15s;
+  color: #ffffff;
+}
+
+.ng-icon--active {
+  color: #818cf8;
+}
+
+/* ── Accordion body ── */
+.ng-accordion {
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ng-accordion--visible {
+  max-height: 600px;
+}
+
+.ng-accordion--hidden {
+  max-height: 0;
+}
+
+/* ── Divider ── */
+.ng-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.04);
+  margin: 2px 0;
+}

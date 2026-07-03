@@ -1,0 +1,157 @@
+/* SalesOrder page */
+
+/* NewOrderModal overlay */
+.so-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.so-modal-box {
+  background: #fff;
+  border-radius: 16px;
+  width: min(920px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.so-modal-header {
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+
+.so-modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.so-modal-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.so-modal-body {
+  padding: 24px 28px 28px;
+}
+
+/* Dispatch tab — count badge */
+.so-dispatch-count {
+  padding: 4px 12px;
+  background: #f0fdfa;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Dispatch table head row */
+.so-dispatch-thead {
+  background: #f8fdf8;
+}
+
+/* Expandable sub-table row */
+.so-expand-row {
+  background: #f8fafc;
+}
+
+.so-expand-cell {
+  padding: 0 20px 12px;
+}
+
+.so-expand-inner {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.so-expand-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.so-expand-thead-row {
+  background: #f1f5f9;
+}
+
+.so-expand-th {
+  padding: 6px 12px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.so-expand-th--left {
+  text-align: left;
+}
+
+.so-expand-th--right {
+  text-align: right;
+}
+
+/* Item rows — even/odd */
+.so-expand-tr {
+  border-top: 1px solid #e2e8f0;
+}
+
+.so-expand-tr--even {
+  background: #fff;
+}
+
+.so-expand-tr--odd {
+  background: #fafafa;
+}
+
+/* Table cell styles */
+.so-expand-td {
+  padding: 8px 12px;
+}
+
+.so-expand-td--product {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.so-expand-td--product-alias {
+  margin-left: 6px;
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.so-expand-td--qty {
+  padding: 8px 12px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.so-expand-td--packing {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #64748b;
+}

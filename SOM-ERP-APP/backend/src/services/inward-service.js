@@ -30,19 +30,13 @@ export async function scanPackForSession(sessionId, packId, warehouse) {
 
   const resolvedWarehouse = warehouse || session.warehouse
 
-  // Update scannedPackIds via ORM; update packWarehouses via raw SQL because the
-  // Prisma query-engine binary wasn't regenerated with the new field yet (DLL was locked).
-  const [updated] = await Promise.all([
-    prisma.inwardSession.update({
-      where: { sessionId },
-      data: { scannedPackIds: { push: packId } },
-    }),
-    prisma.$executeRaw`
-      UPDATE inward_session
-      SET pack_warehouses = pack_warehouses || jsonb_build_object(${packId}::text, ${resolvedWarehouse}::text)
-      WHERE session_id = ${sessionId}
-    `,
-  ])
+  const current = await prisma.inwardSession.findUnique({ where: { sessionId }, select: { packWarehouses: true } })
+  const merged = { ...(current?.packWarehouses || {}), [packId]: resolvedWarehouse }
+
+  const updated = await prisma.inwardSession.update({
+    where: { sessionId },
+    data: { scannedPackIds: { push: packId }, packWarehouses: merged },
+  })
   return { success: true, data: updated }
 }
 
@@ -57,11 +51,7 @@ export async function removeScanFromSession(sessionId, packId) {
 }
 
 export async function submitInwardSession(sessionId, transactedBy) {
-  const [session, whRows] = await Promise.all([
-    prisma.inwardSession.findUnique({ where: { sessionId } }),
-    // Read packWarehouses via raw SQL — Prisma ORM doesn't see this new column yet
-    prisma.$queryRaw`SELECT pack_warehouses FROM inward_session WHERE session_id = ${sessionId}`,
-  ])
+  const session = await prisma.inwardSession.findUnique({ where: { sessionId } })
   if (!session) throw new Error('Session not found')
   if (session.scannedPackIds.length === 0) throw new Error('No packs scanned')
 
@@ -69,11 +59,10 @@ export async function submitInwardSession(sessionId, transactedBy) {
     where: { packId: { in: session.scannedPackIds } }
   })
 
-  // Set of item codes being inwarded - used to re-check pending indents
   const inwaredItemCodes = [...new Set(packs.map(p => p.itemCode))]
 
-  const packWarehouses = (whRows[0]?.pack_warehouses && typeof whRows[0].pack_warehouses === 'object')
-    ? whRows[0].pack_warehouses
+  const packWarehouses = (session.packWarehouses && typeof session.packWarehouses === 'object')
+    ? session.packWarehouses
     : {}
 
   await prisma.$transaction(async (tx) => {

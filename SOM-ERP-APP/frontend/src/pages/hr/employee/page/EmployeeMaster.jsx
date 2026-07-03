@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { employeeApi } from '../../../../api/hr.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import { BackButton, Button, ConfirmModal } from '../../../../components/ui'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 
 const ROLES = ['ADMIN', 'SALES', 'PRODUCTION', 'QC', 'DISPATCH', 'PLANNING', 'ACCOUNTS']
 const SECTIONS = ['NANO', 'BOTANICAL', 'LIQUID', 'POWDER', 'GRANULES']
@@ -74,14 +74,12 @@ function EmployeeForm({ initial, onSave, onCancel }) {
         )}
       </div>
       <div className="flex gap-3 pt-2">
-        <button type="submit" disabled={saving}
-          className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 disabled:opacity-50">
+        <Button type="submit" variant="primary" loading={saving} fullWidth>
           {saving ? 'Saving…' : initial?.id ? 'Update Employee' : 'Add Employee'}
-        </button>
-        <button type="button" onClick={onCancel}
-          className="flex-1 border border-gray-300 py-2.5 rounded-lg text-sm hover:bg-gray-50">
+        </Button>
+        <Button type="button" variant="outline-gray" onClick={onCancel} fullWidth>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )
@@ -149,14 +147,12 @@ function PermissionsTab({ pages, defaults }) {
         })}
       </div>
       <div className="flex gap-3 items-center">
-        <button onClick={save} disabled={saving}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+        <Button variant="primary" onClick={save} loading={saving}>
           {saving ? 'Saving…' : 'Save Permissions'}
-        </button>
-        <button onClick={() => setPerms(p => ({ ...p, [selectedRole]: new Set(defaults[selectedRole] || []) }))}
-          className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+        </Button>
+        <Button variant="outline-gray" onClick={() => setPerms(p => ({ ...p, [selectedRole]: new Set(defaults[selectedRole] || []) }))}>
           Reset to Default
-        </button>
+        </Button>
         {msg && <span className="text-sm text-green-600 font-semibold">{msg}</span>}
       </div>
     </div>
@@ -201,10 +197,9 @@ function CompanyTab() {
           <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Agrilife PTE Ltd"
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-56 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
-        <button type="submit" disabled={saving || !code || !name}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50">
+        <Button type="submit" variant="success" disabled={!code || !name} loading={saving}>
           {saving ? '…' : '+ Add'}
-        </button>
+        </Button>
       </form>
     </div>
   )
@@ -221,6 +216,7 @@ export default function EmployeeMaster() {
   const [filterRole, setFilterRole] = useState('ALL')
   const [err, setErr]             = useState('')
   const [page, setPage]           = useState(1)
+  const [deactivateTarget, setDeactivateTarget] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -239,9 +235,11 @@ export default function EmployeeMaster() {
     setShowForm(false); setEditing(null); load()
   }
 
-  async function handleDelete(emp) {
-    if (!confirm(`Deactivate ${emp.name}?`)) return
-    await employeeApi.remove(emp.id); load()
+  const handleDelete = (emp) => setDeactivateTarget(emp)
+
+  async function confirmDeactivate() {
+    await employeeApi.remove(deactivateTarget.id)
+    setDeactivateTarget(null); load()
   }
 
   const filtered = filterRole === 'ALL' ? employees : employees.filter(e => e.role === filterRole)
@@ -258,10 +256,9 @@ export default function EmployeeMaster() {
           <p className="text-sm text-gray-500 mt-0.5">{activeCount} active employees · Role-based access control</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => { setEditing(null); setShowForm(true) }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700">
+          <Button variant="primary" onClick={() => { setEditing(null); setShowForm(true) }}>
             + Add Employee
-          </button>
+          </Button>
           <BackButton />
         </div>
       </div>
@@ -332,8 +329,8 @@ export default function EmployeeMaster() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 justify-end">
-                          <button onClick={() => { setEditing(emp); setShowForm(true) }} className="text-xs text-blue-600 hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(emp)} className="text-xs text-red-400 hover:underline">Remove</button>
+                          <Button variant="outline" size="xs" onClick={() => { setEditing(emp); setShowForm(true) }}>Edit</Button>
+                          <Button variant="danger" size="xs" onClick={() => handleDelete(emp)}>Remove</Button>
                         </div>
                       </td>
                     </tr>
@@ -362,6 +359,16 @@ export default function EmployeeMaster() {
           <CompanyTab />
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deactivateTarget}
+        title="Deactivate Employee"
+        message={`Deactivate ${deactivateTarget?.name}? They will lose system access.`}
+        acceptText="Deactivate"
+        variant="danger"
+        onAccept={confirmDeactivate}
+        onCancel={() => setDeactivateTarget(null)}
+      />
     </div>
   )
 }

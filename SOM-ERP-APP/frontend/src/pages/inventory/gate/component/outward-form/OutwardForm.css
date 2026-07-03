@@ -1,0 +1,65 @@
+/* OutwardForm */
+
+.of-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #f97316;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
+}
+
+.of-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.of-header-icon {
+  font-size: 18px;
+}
+
+.of-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.of-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.of-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.of-input {
+  padding: 9px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.of-input:focus {
+  border-color: #f97316;
+}
+
+.of-actions {
+  display: flex;
+  gap: 8px;
+}

@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { packingMaterialApi } from '../../../../api/masters.js'
-import BackButton    from '../../../../components/erp/BackButton.jsx'
-import CategoryList  from '../components/CategoryList.jsx'
-import SubTypeGrid   from '../components/SubTypeGrid.jsx'
-import ItemList      from '../components/ItemList.jsx'
-import PackingForm   from '../components/PackingForm.jsx'
-import { CAT, EMPTY_FORM } from '../components/packingConstants.jsx'
+import { Button, BackButton } from '../../../../components/ui'
+import CategoryList  from '../components/category-list/CategoryList.jsx'
+import SubTypeGrid   from '../components/sub-type-grid/SubTypeGrid.jsx'
+import ItemList      from '../components/item-list/ItemList.jsx'
+import PackingForm   from '../components/packing-form/PackingForm.jsx'
+import { CAT, EMPTY_FORM } from '../components/packing-constants/packingConstants.jsx'
 
 export default function PackingMaster() {
   const [items, setItems]     = useState([])
@@ -83,6 +84,7 @@ export default function PackingMaster() {
       shape: item.shape || '', color: item.color || '', laminate: item.laminate || '',
       contentsSpec: item.contentsSpec || '',
       packCount: item.packCount != null ? String(item.packCount) : '',
+      quantity: item.quantity != null ? String(item.quantity) : '0',
       notes: item.notes || '',
     })
     setMsg(''); setShowForm(true)
@@ -91,9 +93,11 @@ export default function PackingMaster() {
     if (!form.itemName || !form.category) { setMsg('Item Name and Category are required'); return }
     if (form.category === 'CORRUGATED_BOXES' && !form.ply) { setMsg('Ply is required for Corrugated Boxes'); return }
     setSaving(true); setMsg('')
+    // Strip UI-only helper fields before sending to backend
+    const { _customPly, ...payload } = form
     try {
-      if (editing) await packingMaterialApi.update(editing.id, form)
-      else         await packingMaterialApi.create(form)
+      if (editing) await packingMaterialApi.update(editing.id, payload)
+      else         await packingMaterialApi.create(payload)
       setShowForm(false); load()
     } catch (e) { setMsg(e.message) }
     finally { setSaving(false) }
@@ -110,7 +114,7 @@ export default function PackingMaster() {
       {loadErr && (
         <div className="mx-6 mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
           <span>⚠️ {loadErr}</span>
-          <button onClick={load} className="ml-auto underline text-xs shrink-0">Retry</button>
+          <Button variant="ghost" icon={RefreshCw} size="xs" onClick={load} className="ml-auto shrink-0">Retry</Button>
         </div>
       )}
 

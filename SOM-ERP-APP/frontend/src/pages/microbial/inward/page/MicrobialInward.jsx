@@ -1,5 +1,5 @@
 /**
- 
+
 * MicrobialInward — Cold Room SFG Inward Recording
 *    Container code pattern: {MICROBE_CODE}-{TYPE_CODE}-{SEQ}
 *   TYPE: BM=Biomass | FSP=Spray Dried Powder-F | CSP=Spray Dried Powder-C
@@ -8,9 +8,12 @@
 */
 
 import { useState, useEffect, useRef } from "react";
-import Pagination from "../../../../components/erp/Pagination.jsx";
+import Pagination from "../../../../components/pagination/Pagination.jsx";
 import * as XLSX from "xlsx";
 import { microbialSfgApi } from "../../../../api/microbial.js";
+import { BackButton, Button } from "../../../../components/ui";
+import { RefreshCw } from "lucide-react";
+import './MicrobialInward.css';
 
 const MICROBE_TYPES = [
   { code: "BM", label: "Biomass", fill: "PARTIAL" },
@@ -18,16 +21,18 @@ const MICROBE_TYPES = [
   { code: "CSP", label: "Spray Dried Powder-C", fill: "FULL" },
 ];
 const FILL_STATUS = ["FULL", "PARTIAL", "EMPTY"];
-const FILL_COLOR = {
-  FULL: { bg: "#dcfce7", c: "#166534" },
-  PARTIAL: { bg: "#fef9c3", c: "#854d0e" },
-  EMPTY: { bg: "#fee2e2", c: "#991b1b" },
-};
 
-const STATUS_COLOR = {
-  ACTIVE: { bg: "#eff6ff", c: "#1d4ed8" },
-  EXHAUSTED: { bg: "#f1f5f9", c: "#64748b" },
-};
+function fillBadgeCls(fill) {
+  if (fill === 'FULL')    return 'mi-badge mi-badge--fill-full';
+  if (fill === 'PARTIAL') return 'mi-badge mi-badge--fill-partial';
+  return 'mi-badge mi-badge--fill-empty';
+}
+
+function statusBadgeCls(status) {
+  if (status === 'ACTIVE')    return 'mi-badge mi-badge--status-active';
+  if (status === 'EXHAUSTED') return 'mi-badge mi-badge--status-exhausted';
+  return 'mi-badge mi-badge--status-active';
+}
 
 function fmtCfu(v) {
   if (!v) return "—";
@@ -38,101 +43,6 @@ function fmtCfu(v) {
   if (n >= 1e8) return `${(n / 1e8).toFixed(2)}×10⁸`;
   return n.toExponential(2);
 }
-
-const S = {
-  page: { padding: "24px", fontFamily: "'Inter',system-ui,sans-serif" },
-  head: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: "24px",
-  },
-  h1: { fontSize: "22px", fontWeight: 800, color: "#0f172a", margin: 0 },
-  sub: { fontSize: "13px", color: "#64748b", marginTop: "4px" },
-  card: {
-    background: "#fff",
-    border: "1px solid #e2e8f0",
-    borderRadius: "12px",
-    padding: "20px",
-    marginBottom: "20px",
-  },
-  label: {
-    display: "block",
-    fontSize: "11px",
-    fontWeight: 700,
-    color: "#64748b",
-    marginBottom: "4px",
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-  },
-  input: {
-    width: "100%",
-    padding: "9px 12px",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: "7px",
-    fontSize: "13px",
-    boxSizing: "border-box",
-    outline: "none",
-  },
-  select: {
-    width: "100%",
-    padding: "9px 12px",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: "7px",
-    fontSize: "13px",
-    boxSizing: "border-box",
-    outline: "none",
-    background: "#fff",
-  },
-  btnP: {
-    padding: "9px 20px",
-    background: "#1e3a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: "7px",
-    fontWeight: 700,
-    fontSize: "13px",
-    cursor: "pointer",
-  },
-  btnO: {
-    padding: "8px 16px",
-    background: "#fff",
-    color: "#1e3a5f",
-    border: "1.5px solid #1e3a5f",
-    borderRadius: "7px",
-    fontWeight: 600,
-    fontSize: "13px",
-    cursor: "pointer",
-  },
-  table: { width: "100%", borderCollapse: "collapse", fontSize: "12px" },
-  th: {
-    textAlign: "left",
-    padding: "9px 12px",
-    fontSize: "11px",
-    fontWeight: 700,
-    color: "#64748b",
-    letterSpacing: "0.06em",
-    borderBottom: "2px solid #e2e8f0",
-    background: "#f8fafc",
-    whiteSpace: "nowrap",
-  },
-  td: {
-    padding: "10px 12px",
-    borderBottom: "1px solid #f1f5f9",
-    color: "#0f172a",
-    verticalAlign: "middle",
-  },
-  badge: (bg, c) => ({
-    display: "inline-block",
-    padding: "2px 8px",
-    borderRadius: "99px",
-    fontSize: "10px",
-    fontWeight: 700,
-    background: bg,
-    color: c,
-  }),
-  hint: { fontSize: "11px", color: "#94a3b8", marginTop: "4px" },
-};
 
 const EMPTY_FORM = {
   microbe_id: "",
@@ -346,98 +256,47 @@ export default function MicrobialInward() {
   }, [filterMicrobe, filterType, filterStatus]);
 
   return (
-    <div style={S.page}>
-      <div style={{ marginBottom: "14px" }}>
-        <button
-          onClick={() => window.history.back()}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "7px 14px",
-            borderRadius: "10px",
-            background: "#fff",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            fontSize: "13px",
-            fontWeight: 500,
-            color: "#475569",
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#f8fafc";
-            e.currentTarget.style.color = "#0f172a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#fff";
-            e.currentTarget.style.color = "#475569";
-          }}
-        >
-          ← Back
-        </button>
+    <div className="mi-page">
+      <div className="mi-back">
+        <BackButton />
       </div>
-      <div style={S.head}>
+      <div className="mi-head">
         <div>
-          <h1 style={S.h1}>🧊 Microbial Inward</h1>
-          <p style={S.sub}>
+          <h1 className="mi-h1">🧊 Microbial Inward</h1>
+          <p className="mi-sub">
             Record microbial SFG stock — Biomass, Spray Dried Powders, and more
           </p>
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button style={S.btnO} onClick={() => setTab("import")}>
+        <div className="mi-head-actions">
+          <Button variant="outline" onClick={() => setTab("import")}>
             ⇪ Import Excel
-          </button>
-          <button
-            style={S.btnP}
+          </Button>
+          <Button
+            variant="primary"
             onClick={() => {
               setForm(EMPTY_FORM);
               setTab("add");
             }}
           >
             + New Inward Entry
-          </button>
+          </Button>
         </div>
       </div>
 
       {summary.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))",
-            gap: "12px",
-            marginBottom: "20px",
-          }}
-        >
+        <div className="mi-summary-grid">
           {summary.map((s) => (
             <div
               key={`${s.microbe_code}-${s.microbe_type}`}
-              style={{
-                background: "#fff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "10px",
-                padding: "14px 16px",
-                borderLeft: "4px solid #1e3a5f",
-              }}
+              className="mi-summary-card"
             >
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "#64748b",
-                  fontWeight: 700,
-                  marginBottom: "2px",
-                }}
-              >
+              <div className="mi-summary-label">
                 {s.microbe_code} · {s.microbe_type}
               </div>
-              <div
-                style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a" }}
-              >
+              <div className="mi-summary-value">
                 {Number(s.total_remaining_kg).toFixed(2)} kg
               </div>
-              <div
-                style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}
-              >
+              <div className="mi-summary-meta">
                 {fmtCfu(s.avg_cfu_per_g)} CFU/g · {s.active_batches} batch(es)
               </div>
             </div>
@@ -445,7 +304,7 @@ export default function MicrobialInward() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "4px", marginBottom: "20px" }}>
+      <div className="mi-tabs">
         {[
           ["list", "📋 Inward Records"],
           ["add", "+ New Entry"],
@@ -454,18 +313,7 @@ export default function MicrobialInward() {
           <button
             key={k}
             onClick={() => setTab(k)}
-            style={{
-              padding: "8px 18px",
-              borderRadius: "8px 8px 0 0",
-              fontSize: "13px",
-              fontWeight: 600,
-              border: "1px solid #e2e8f0",
-              borderBottom:
-                tab === k ? "2px solid #1e3a5f" : "1px solid #e2e8f0",
-              background: tab === k ? "#fff" : "#f8fafc",
-              color: tab === k ? "#1e3a5f" : "#64748b",
-              cursor: "pointer",
-            }}
+            className={`mi-tab${tab === k ? ' mi-tab--active' : ''}`}
           >
             {l}
           </button>
@@ -473,18 +321,10 @@ export default function MicrobialInward() {
       </div>
 
       {tab === "list" && (
-        <div style={S.card}>
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              marginBottom: "16px",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
+        <div className="mi-card">
+          <div className="mi-filters">
             <select
-              style={{ ...S.select, width: "190px" }}
+              className="mi-select mi-select--w190"
               value={filterMicrobe}
               onChange={(e) => setFilterMicrobe(e.target.value)}
             >
@@ -496,7 +336,7 @@ export default function MicrobialInward() {
               ))}
             </select>
             <select
-              style={{ ...S.select, width: "160px" }}
+              className="mi-select mi-select--w160"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
             >
@@ -508,7 +348,7 @@ export default function MicrobialInward() {
               ))}
             </select>
             <select
-              style={{ ...S.select, width: "130px" }}
+              className="mi-select mi-select--w130"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -516,26 +356,20 @@ export default function MicrobialInward() {
               <option value="ACTIVE">Active</option>
               <option value="EXHAUSTED">Exhausted</option>
             </select>
-            <button style={{ ...S.btnO, marginLeft: "auto" }} onClick={load}>
-              ↻ Refresh
-            </button>
+            <Button variant="outline-gray" icon={RefreshCw} onClick={load} className="ml-auto">
+              Refresh
+            </Button>
           </div>
           {loading ? (
-            <p
-              style={{ color: "#94a3b8", textAlign: "center", padding: "30px" }}
-            >
-              Loading…
-            </p>
+            <p className="mi-loading">Loading…</p>
           ) : filtered.length === 0 ? (
-            <div
-              style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}
-            >
-              <div style={{ fontSize: "36px", marginBottom: "8px" }}>📦</div>
+            <div className="mi-empty">
+              <div className="mi-empty-icon">📦</div>
               <p>No records found. Add an inward entry or import from Excel.</p>
             </div>
           ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={S.table}>
+            <div className="mi-overflow-x">
+              <table className="mi-table">
                 <thead>
                   <tr>
                     {[
@@ -553,94 +387,67 @@ export default function MicrobialInward() {
                       "Fill",
                       "Status",
                     ].map((h) => (
-                      <th key={h} style={S.th}>
+                      <th key={h} className="mi-th">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedFiltered.map((r, i) => {
-                    const fs = FILL_COLOR[r.fill_status] || FILL_COLOR.PARTIAL;
-                    const ss = STATUS_COLOR[r.status] || STATUS_COLOR.ACTIVE;
-                    return (
-                      <tr
-                        key={r.inward_id}
-                        style={{ background: i % 2 === 0 ? "#fff" : "#fafafa" }}
-                      >
-                        <td style={{ ...S.td, fontWeight: 600 }}>
-                          {r.microbe_name}
-                          <div style={{ fontSize: "10px", color: "#94a3b8" }}>
-                            {r.microbe_code}
-                          </div>
-                        </td>
-                        <td
-                          style={{
-                            ...S.td,
-                            fontFamily: "monospace",
-                            fontSize: "12px",
-                          }}
-                        >
-                          {r.container_code}
-                        </td>
-                        <td style={S.td}>{r.microbe_type}</td>
-                        <td
-                          style={{
-                            ...S.td,
-                            fontFamily: "monospace",
-                            fontSize: "12px",
-                          }}
-                        >
-                          {r.biomass_batch_code}
-                        </td>
-                        <td style={S.td}>
-                          {r.date_of_harvest
-                            ? new Date(r.date_of_harvest).toLocaleDateString(
-                                "en-IN",
-                              )
-                            : "—"}
-                        </td>
-                        <td style={{ ...S.td, fontWeight: 600 }}>
-                          {Number(r.total_qty_kg).toFixed(3)}
-                        </td>
-                        <td
-                          style={{
-                            ...S.td,
-                            fontWeight: 700,
-                            color:
-                              Number(r.remaining_qty_kg) > 0
-                                ? "#15803d"
-                                : "#dc2626",
-                          }}
-                        >
-                          {Number(r.remaining_qty_kg).toFixed(3)}
-                        </td>
-                        <td style={S.td}>{fmtCfu(r.inhouse_cfu_per_g)}</td>
-                        <td style={S.td}>{r.location || "—"}</td>
-                        <td style={S.td}>
-                          {r.moisture != null ? `${r.moisture}%` : "—"}
-                        </td>
-                        <td style={S.td}>
-                          {r.shelf_life_days != null
-                            ? `${r.shelf_life_days}d`
-                            : "—"}
-                        </td>
-                        <td style={S.td}>
-                          <span style={S.badge(fs.bg, fs.c)}>
-                            {r.fill_status}
-                          </span>
-                        </td>
-                        <td style={S.td}>
-                          <span style={S.badge(ss.bg, ss.c)}>{r.status}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {paginatedFiltered.map((r, i) => (
+                    <tr
+                      key={r.inward_id}
+                      className={i % 2 === 0 ? 'mi-tr--even' : 'mi-tr--odd'}
+                    >
+                      <td className={`mi-td mi-td--bold`}>
+                        {r.microbe_name}
+                        <div className="mi-microbe-code-hint">
+                          {r.microbe_code}
+                        </div>
+                      </td>
+                      <td className="mi-td mi-td--mono">
+                        {r.container_code}
+                      </td>
+                      <td className="mi-td">{r.microbe_type}</td>
+                      <td className="mi-td mi-td--mono">
+                        {r.biomass_batch_code}
+                      </td>
+                      <td className="mi-td">
+                        {r.date_of_harvest
+                          ? new Date(r.date_of_harvest).toLocaleDateString("en-IN")
+                          : "—"}
+                      </td>
+                      <td className="mi-td mi-td--bold">
+                        {Number(r.total_qty_kg).toFixed(3)}
+                      </td>
+                      <td className={Number(r.remaining_qty_kg) > 0 ? 'mi-td mi-remaining--positive' : 'mi-td mi-remaining--zero'}>
+                        {Number(r.remaining_qty_kg).toFixed(3)}
+                      </td>
+                      <td className="mi-td">{fmtCfu(r.inhouse_cfu_per_g)}</td>
+                      <td className="mi-td">{r.location || "—"}</td>
+                      <td className="mi-td">
+                        {r.moisture != null ? `${r.moisture}%` : "—"}
+                      </td>
+                      <td className="mi-td">
+                        {r.shelf_life_days != null
+                          ? `${r.shelf_life_days}d`
+                          : "—"}
+                      </td>
+                      <td className="mi-td">
+                        <span className={fillBadgeCls(r.fill_status)}>
+                          {r.fill_status}
+                        </span>
+                      </td>
+                      <td className="mi-td">
+                        <span className={statusBadgeCls(r.status)}>{r.status}</span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           )}
-          <div style={{ padding: "8px 4px" }}>
+          <div className="mi-pagination">
             <Pagination
               page={page}
               total={filtered.length}
@@ -656,31 +463,14 @@ export default function MicrobialInward() {
       )}
 
       {tab === "add" && (
-        <div style={S.card}>
-          <h3
-            style={{
-              fontSize: "16px",
-              fontWeight: 700,
-              color: "#0f172a",
-              marginTop: 0,
-              marginBottom: "20px",
-            }}
-          >
-            + New Microbial Inward Entry
-          </h3>
+        <div className="mi-card">
+          <h3 className="mi-section-title">+ New Microbial Inward Entry</h3>
           <form onSubmit={handleSubmit}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3,1fr)",
-                gap: "16px",
-                marginBottom: "16px",
-              }}
-            >
+            <div className="mi-form-grid-3">
               <div>
-                <label style={S.label}>Microbe Name *</label>
+                <label className="mi-label">Microbe Name *</label>
                 <select
-                  style={S.select}
+                  className="mi-select"
                   value={form.microbe_id}
                   onChange={handleMicrobeChange}
                   required
@@ -694,9 +484,9 @@ export default function MicrobialInward() {
                 </select>
               </div>
               <div>
-                <label style={S.label}>Microbe Type *</label>
+                <label className="mi-label">Microbe Type *</label>
                 <select
-                  style={S.select}
+                  className="mi-select"
                   value={form.type_code}
                   onChange={handleTypeChange}
                   required
@@ -710,9 +500,9 @@ export default function MicrobialInward() {
                 </select>
               </div>
               <div>
-                <label style={S.label}>Container Fill Status *</label>
+                <label className="mi-label">Container Fill Status *</label>
                 <select
-                  style={S.select}
+                  className="mi-select"
                   value={form.fill_status}
                   onChange={(e) => set("fill_status", e.target.value)}
                 >
@@ -722,40 +512,16 @@ export default function MicrobialInward() {
                     </option>
                   ))}
                 </select>
-                <p style={S.hint}>
+                <p className="mi-hint">
                   Spray dried powder → FULL; Biomass → PARTIAL
                 </p>
               </div>
             </div>
 
             {form.microbe_code && form.type_code && (
-              <div
-                style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  padding: "14px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "16px",
-                    alignItems: "center",
-                    marginBottom: "10px",
-                  }}
-                >
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                    }}
-                  >
+              <div className="mi-container-box">
+                <div className="mi-container-radios">
+                  <label className="mi-radio-label">
                     <input
                       type="radio"
                       checked={!form.use_existing_container}
@@ -764,16 +530,7 @@ export default function MicrobialInward() {
                     New Container
                   </label>
                   {containers.length > 0 && (
-                    <label
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        display: "flex",
-                        gap: "8px",
-                        alignItems: "center",
-                      }}
-                    >
+                    <label className="mi-radio-label">
                       <input
                         type="radio"
                         checked={form.use_existing_container}
@@ -785,25 +542,25 @@ export default function MicrobialInward() {
                 </div>
                 {!form.use_existing_container ? (
                   <div>
-                    <label style={S.label}>New Container Code</label>
+                    <label className="mi-label">New Container Code</label>
                     <input
-                      style={S.input}
+                      className="mi-input"
                       value={form.new_container_code}
                       onChange={(e) =>
                         set("new_container_code", e.target.value.toUpperCase())
                       }
                       placeholder={nextCode || "Auto-generated"}
                     />
-                    <p style={S.hint}>
+                    <p className="mi-hint">
                       Pattern: {form.microbe_code}-{form.type_code}-001. Next
                       suggested: <strong>{nextCode || "…"}</strong>
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <label style={S.label}>Select Container *</label>
+                    <label className="mi-label">Select Container *</label>
                     <select
-                      style={S.select}
+                      className="mi-select"
                       value={form.container_id}
                       onChange={(e) => set("container_id", e.target.value)}
                       required
@@ -822,18 +579,11 @@ export default function MicrobialInward() {
               </div>
             )}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3,1fr)",
-                gap: "16px",
-                marginBottom: "16px",
-              }}
-            >
+            <div className="mi-form-grid-3">
               <div>
-                <label style={S.label}>Inhouse CFU/g *</label>
+                <label className="mi-label">Inhouse CFU/g *</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   type="number"
                   min="0"
                   step="any"
@@ -842,14 +592,14 @@ export default function MicrobialInward() {
                   onChange={(e) => set("inhouse_cfu_per_g", e.target.value)}
                   required
                 />
-                <p style={S.hint}>
+                <p className="mi-hint">
                   Enter scientific notation e.g. 5e10 = 5×10¹⁰
                 </p>
               </div>
               <div>
-                <label style={S.label}>Biomass Batch Code *</label>
+                <label className="mi-label">Biomass Batch Code *</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   placeholder="e.g. BB-2026-001"
                   value={form.biomass_batch_code}
                   onChange={(e) => set("biomass_batch_code", e.target.value)}
@@ -857,9 +607,9 @@ export default function MicrobialInward() {
                 />
               </div>
               <div>
-                <label style={S.label}>Date of Harvest *</label>
+                <label className="mi-label">Date of Harvest *</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   type="date"
                   value={form.date_of_harvest}
                   onChange={(e) => set("date_of_harvest", e.target.value)}
@@ -867,9 +617,9 @@ export default function MicrobialInward() {
                 />
               </div>
               <div>
-                <label style={S.label}>Total Qty (kg) *</label>
+                <label className="mi-label">Total Qty (kg) *</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   type="number"
                   min="0.001"
                   step="0.001"
@@ -880,18 +630,18 @@ export default function MicrobialInward() {
                 />
               </div>
               <div>
-                <label style={S.label}>Location (Cold Room)</label>
+                <label className="mi-label">Location (Cold Room)</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   placeholder="e.g. CR-A-01"
                   value={form.location}
                   onChange={(e) => set("location", e.target.value)}
                 />
               </div>
               <div>
-                <label style={S.label}>Moisture %</label>
+                <label className="mi-label">Moisture %</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   type="number"
                   min="0"
                   max="100"
@@ -902,9 +652,9 @@ export default function MicrobialInward() {
                 />
               </div>
               <div>
-                <label style={S.label}>Shelf Life (days)</label>
+                <label className="mi-label">Shelf Life (days)</label>
                 <input
-                  style={S.input}
+                  className="mi-input"
                   type="number"
                   min="1"
                   placeholder="e.g. 180"
@@ -914,86 +664,59 @@ export default function MicrobialInward() {
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button type="submit" style={S.btnP} disabled={saving}>
+            <div className="mi-form-actions">
+              <Button type="submit" variant="primary" loading={saving}>
                 {saving ? "Saving…" : "✅ Save Inward Entry"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                style={S.btnO}
+                variant="outline-gray"
                 onClick={() => {
                   setForm(EMPTY_FORM);
                   setTab("list");
                 }}
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         </div>
       )}
 
       {tab === "import" && (
-        <div style={S.card}>
-          <h3
-            style={{
-              fontSize: "16px",
-              fontWeight: 700,
-              color: "#0f172a",
-              marginTop: 0,
-              marginBottom: "4px",
-            }}
-          >
-            ⇪ Import Inward Records from Excel
-          </h3>
-          <p
-            style={{ fontSize: "13px", color: "#64748b", marginBottom: "20px" }}
-          >
+        <div className="mi-card">
+          <h3 className="mi-section-title">⇪ Import Inward Records from Excel</h3>
+          <p className="mi-import-desc">
             Columns: Microbe Name, Container Code, Microbe Type, Inhouse CFU/g,
             Biomass Batch Code, Date of Harvest, Total Qty (kg), Location,
             Moisture, Shelf Life (days), Fill Status
           </p>
-          <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-            <button style={S.btnO} onClick={downloadTemplate}>
+          <div className="mi-import-actions">
+            <Button variant="outline-gray" onClick={downloadTemplate}>
               ⬇ Download Template
-            </button>
-            <button style={S.btnP} onClick={() => fileRef.current?.click()}>
+            </Button>
+            <Button variant="primary" onClick={() => fileRef.current?.click()}>
               📂 Choose Excel File
-            </button>
+            </Button>
             <input
               ref={fileRef}
               type="file"
               accept=".xlsx,.xls"
-              style={{ display: "none" }}
+              className="mi-file-hidden"
               onChange={handleFile}
             />
           </div>
           {importRows.length > 0 && (
             <>
-              <div
-                style={{
-                  background: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  marginBottom: "16px",
-                  overflowX: "auto",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    marginBottom: "8px",
-                  }}
-                >
+              <div className="mi-import-preview">
+                <p className="mi-import-preview-title">
                   {importRows.length} row(s) detected
                 </p>
-                <table style={{ ...S.table, fontSize: "11px" }}>
+                <table className={`mi-table mi-import-table`}>
                   <thead>
                     <tr>
                       {Object.keys(importRows[0]).map((k) => (
-                        <th key={k} style={{ ...S.th, padding: "5px 8px" }}>
+                        <th key={k} className={`mi-th mi-import-th`}>
                           {k}
                         </th>
                       ))}
@@ -1003,7 +726,7 @@ export default function MicrobialInward() {
                     {importRows.slice(0, 6).map((r, i) => (
                       <tr key={i}>
                         {Object.values(r).map((v, j) => (
-                          <td key={j} style={{ ...S.td, padding: "5px 8px" }}>
+                          <td key={j} className={`mi-td mi-import-td`}>
                             {String(v)}
                           </td>
                         ))}
@@ -1012,49 +735,28 @@ export default function MicrobialInward() {
                   </tbody>
                 </table>
                 {importRows.length > 6 && (
-                  <p
-                    style={{
-                      fontSize: "11px",
-                      color: "#94a3b8",
-                      marginTop: "6px",
-                    }}
-                  >
+                  <p className="mi-import-more">
                     …{importRows.length - 6} more rows
                   </p>
                 )}
               </div>
-              <button
-                style={S.btnP}
+              <Button
+                variant="success"
                 onClick={handleImport}
-                disabled={importLoading}
+                loading={importLoading}
               >
                 {importLoading
                   ? "Importing…"
                   : `✅ Import ${importRows.length} Record(s)`}
-              </button>
+              </Button>
             </>
           )}
           {importStatus && (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "14px 18px",
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: "8px",
-                fontSize: "13px",
-              }}
-            >
-              <strong style={{ color: "#15803d" }}>✅ Done:</strong>{" "}
+            <div className="mi-import-result">
+              <strong className="mi-import-result-done">✅ Done:</strong>{" "}
               {importStatus.imported} imported · {importStatus.skipped} skipped
               {importStatus.errors?.length > 0 && (
-                <div
-                  style={{
-                    marginTop: "8px",
-                    color: "#dc2626",
-                    fontSize: "12px",
-                  }}
-                >
+                <div className="mi-import-errors">
                   {importStatus.errors.slice(0, 5).map((e, i) => (
                     <div key={i}>
                       {e.row}: {e.error}

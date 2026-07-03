@@ -1,13 +1,8 @@
 import express from 'express';
-import {
-  listRecords,
-  getRecord,
-  createRecord,
-  updateRecord,
-  deleteRecord,
-  deleteAllRecords,
-  getStats,
-} from './admin_panel.controller.js';
+import { listRecords, getRecord, getStats } from './get/admin_panel.controller.js';
+import { createRecord } from './create/admin_panel.controller.js';
+import { updateRecord } from './update/admin_panel.controller.js';
+import { deleteRecord, deleteAllRecords } from './delete/admin_panel.controller.js';
 
 const router = express.Router();
 

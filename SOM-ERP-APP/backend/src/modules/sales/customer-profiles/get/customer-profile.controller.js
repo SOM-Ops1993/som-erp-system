@@ -8,7 +8,7 @@ const getCustomerProfiles = async (req, res) => {
     });
     return res.json({ success: true, data: profiles });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -24,7 +24,7 @@ const getCpProfiles = async (req, res) => {
     });
     return res.json({ success: true, data: profiles });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

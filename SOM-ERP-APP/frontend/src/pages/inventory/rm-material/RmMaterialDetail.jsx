@@ -1,10 +1,12 @@
+﻿import './RmMaterialDetail.css'
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { stockApi } from '../../../api/inventory.js'
-import BackButton        from '../../../components/erp/BackButton.jsx'
-import RmDetailFilters   from './components/RmDetailFilters.jsx'
-import RmDetailTable     from './components/RmDetailTable.jsx'
+import { BackButton, IconButton } from '../../../components/ui'
+import RmDetailFilters   from './components/rm-detail-filters/RmDetailFilters.jsx'
+import RmDetailTable     from './components/rm-detail-table/RmDetailTable.jsx'
 import { groupPacks, groupStatus } from './components/rmDetailHelpers.js'
+import  { RefreshCw } from 'lucide-react'
 
 function fmtQty(n) {
   if (n == null) return '—'
@@ -95,10 +97,7 @@ export default function RmMaterialDetail() {
         {/* Header */}
         <div className="flex justify-between items-start mb-7">
           <div>
-            <button onClick={() => navigate('/rm-material')}
-              className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 mb-2 transition-colors">
-              ← Raw Materials
-            </button>
+            <BackButton onClick={() => navigate('/rm-material')} label="Raw Materials" size="sm" />
             {loading ? (
               <div className="h-6 w-48 bg-gray-200 rounded animate-pulse" />
             ) : (
@@ -109,9 +108,7 @@ export default function RmMaterialDetail() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={load}
-              className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition text-lg"
-              title="Refresh">↻</button>
+            <IconButton icon={RefreshCw} onClick={load} tooltip="Refresh" variant="outline-gray" size="sm" />
             <BackButton />
           </div>
         </div>

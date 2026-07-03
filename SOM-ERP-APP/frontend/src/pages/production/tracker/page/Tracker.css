@@ -1,0 +1,13 @@
+/* Tracker */
+
+.trk-root {
+  min-height: 0;
+}
+
+.trk-sidebar {
+  overflow-y: auto;
+}
+
+.trk-progress {
+  /* dynamic width set inline */
+}

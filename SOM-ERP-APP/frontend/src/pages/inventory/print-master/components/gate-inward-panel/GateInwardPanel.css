@@ -1,0 +1,159 @@
+/* GateInwardPanel */
+
+.gip-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.gip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.gip-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gip-subtitle {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.gip-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: #fef2f2;
+  border-radius: 6px;
+}
+
+.gip-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.gip-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.gip-empty-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.gip-empty-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gip-empty-sub {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.gip-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gip-card {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  border: none;
+}
+
+.gip-card--idle {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.gip-card--idle:hover {
+  border-color: #93c5fd;
+}
+
+.gip-card--selected {
+  background: #eff6ff;
+  border: 1.5px solid #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.gip-card-row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.gip-supplier {
+  font-weight: 700;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.gip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.gip-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.gip-meta-date {
+  margin-left: auto;
+}
+
+.gip-selected-hint {
+  margin-top: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+/* StatusBadge */
+.gip-badge {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.gip-badge--pending  { background: #fef3c7; color: #92400e; }
+.gip-badge--approved { background: #f0fdf4; color: #15803d; }
+.gip-badge--rejected { background: #fef2f2; color: #dc2626; }

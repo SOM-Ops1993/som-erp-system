@@ -1,27 +1,53 @@
 import prisma from "../../../../db.js";
 
-export async function getStockSummary(req, res) {
+export const getStockSummary = async (req, res) => {
   try {
-    const data = await prisma.$queryRaw`
-      SELECT
-        p.item_code,
-        i.item_name,
-        i.item_category,
-        i.uom,
-        i.reorder_level,
-        i.warehouse_zone,
-        COUNT(p.pack_id) AS pack_count,
-        SUM(p.qty_remaining) AS total_qty,
-        MIN(p.inward_date) AS oldest_lot_date,
-        COUNT(p.pack_id) FILTER (WHERE p.status = 'quarantine') AS quarantine_count
-      FROM erp_packs p
-      JOIN erp_items i ON i.item_code = p.item_code
-      WHERE p.qty_remaining > 0 AND p.status != 'exhausted'
-      GROUP BY p.item_code, i.item_name, i.item_category, i.uom, i.reorder_level, i.warehouse_zone
-      ORDER BY i.item_category, i.item_name
-    `;
+    const [items, packs] = await Promise.all([
+      prisma.erpItem.findMany({
+        select: { itemCode: true, itemName: true, itemCategory: true, uom: true, reorderLevel: true, warehouseZone: true },
+      }),
+      prisma.erpPack.findMany({
+        where:  { qtyRemaining: { gt: 0 }, status: { not: 'exhausted' } },
+        select: { packId: true, itemCode: true, qtyRemaining: true, inwardDate: true, status: true },
+      }),
+    ])
+
+    const itemMap = Object.fromEntries(items.map(i => [i.itemCode, i]))
+
+    const grouped = {}
+    for (const p of packs) {
+      const code = p.itemCode
+      if (!grouped[code]) {
+        const item = itemMap[code] || {}
+        grouped[code] = {
+          item_code:       code,
+          item_name:       item.itemName       ?? null,
+          item_category:   item.itemCategory   ?? null,
+          uom:             item.uom             ?? null,
+          reorder_level:   item.reorderLevel    ?? null,
+          warehouse_zone:  item.warehouseZone   ?? null,
+          pack_count:      0,
+          total_qty:       0,
+          oldest_lot_date: null,
+          quarantine_count: 0,
+        }
+      }
+      const g = grouped[code]
+      g.pack_count++
+      g.total_qty += Number(p.qtyRemaining)
+      if (!g.oldest_lot_date || (p.inwardDate && new Date(p.inwardDate) < new Date(g.oldest_lot_date))) {
+        g.oldest_lot_date = p.inwardDate
+      }
+      if (p.status === 'quarantine') g.quarantine_count++
+    }
+
+    const data = Object.values(grouped).sort((a, b) => {
+      const catCmp = (a.item_category ?? '').localeCompare(b.item_category ?? '')
+      return catCmp !== 0 ? catCmp : (a.item_name ?? '').localeCompare(b.item_name ?? '')
+    })
+
     return res.json({ success: true, data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 }

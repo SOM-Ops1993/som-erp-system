@@ -1,45 +1,27 @@
-import prisma from "../../../db.js";
-import {
-  signJwt,
-  verifyPassword,
-  verifyPin,
-} from "../../../middleware/auth.js";
+import { findAccount } from "../../../../access.js";
+import { signJwt } from "../../../middleware/auth.js";
 import { writeAudit } from "../../../middleware/audit.js";
 
-export async function login(req, res) {
-  const { username, password } = req.body;
+// Temporary flat-file login — checks credentials against backend/access.js
+// instead of a database-backed User table. See that file's header comment.
+export const login = async (req, res) => {
+  const { email, password } = req.body;
 
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: {
-      userId: true,
-      username: true,
-      fullName: true,
-      role: true,
-      passwordHash: true,
-      isActive: true,
-    },
-  });
+  const account = findAccount(email);
+  if (!account || account.password !== password) {
+    return res.status(401).json({ success: false, error: "Invalid credentials", code: "UNAUTHORIZED" });
+  }
 
-  if (!user || !user.isActive)
-    return res.status(401).json({ success: false, error: "Invalid credentials" });
+  const token = signJwt({ email: account.email });
 
-  if (!verifyPassword(password, user.passwordHash))
-    return res.status(401).json({ success: false, error: "Invalid credentials" });
-
-  const token = signJwt({
-    user_id: user.userId,
-    username: user.username,
-    full_name: user.fullName,
-    role: user.role,
-  });
-
+  // userId is a strict-UUID column — access.js accounts have no UUID, so it's
+  // left null here and the email goes in username instead (a plain string column).
   await writeAudit({
-    userId: user.userId,
-    username: user.username,
+    userId: null,
+    username: account.email,
     action: "LOGIN",
-    tableName: "users",
-    recordId: user.userId,
+    tableName: "access.js",
+    recordId: account.email,
     ip: req.ip,
   });
 
@@ -47,66 +29,12 @@ export async function login(req, res) {
     success: true,
     token,
     user: {
-      user_id: user.userId,
-      username: user.username,
-      full_name: user.fullName,
-      role: user.role,
+      user_id: account.email,
+      email: account.email,
+      full_name: account.fullName,
+      role: account.role,
+      operation: account.operation,
+      plant: account.plant,
     },
   });
-}
-
-export async function pinLogin(req, res) {
-  const { username, pin } = req.body;
-
-  const user = await prisma.user.findUnique({
-    where: { username },
-    select: {
-      userId: true,
-      username: true,
-      fullName: true,
-      role: true,
-      pinHash: true,
-      isActive: true,
-    },
-  });
-
-  if (!user || !user.isActive)
-    return res.status(401).json({ success: false, error: "Invalid credentials" });
-
-  if (!user.pinHash)
-    return res.status(401).json({ success: false, error: "PIN not set for this user" });
-
-  if (!verifyPin(pin, user.pinHash))
-    return res.status(401).json({ success: false, error: "Invalid PIN" });
-
-  const token = signJwt(
-    {
-      user_id: user.userId,
-      username: user.username,
-      full_name: user.fullName,
-      role: user.role,
-      pin_session: true,
-    },
-    30 * 60,
-  );
-
-  await writeAudit({
-    userId: user.userId,
-    username: user.username,
-    action: "PIN_LOGIN",
-    tableName: "users",
-    recordId: user.userId,
-    ip: req.ip,
-  });
-
-  return res.json({
-    success: true,
-    token,
-    user: {
-      user_id: user.userId,
-      username: user.username,
-      full_name: user.fullName,
-      role: user.role,
-    },
-  });
-}
+};

@@ -2,7 +2,7 @@ import { Route, Navigate } from "react-router-dom";
 // import GateEntry from "../../pages/erp/GateEntry.jsx";
 // import InventoryManagement from "../../pages/erp/InventoryManagement.jsx";
 import BomIssuance from "../../pages/erp/BomIssuance.jsx";
-import PlanningEngine from "../../pages/erp/PlanningEngine.jsx";
+import PlanningPage from "../../pages/production/planning/page/PlanningPage.jsx";
 // import SalesOrders from "../../pages/erp/SalesOrders.jsx";
 import MicrobialManagement from "../../pages/erp/MicrobialManagement.jsx";
 
@@ -27,7 +27,11 @@ export const erpRoutes = [
   <Route
     key="erp-planning"
     path="/erp/planning"
-    element={<PlanningEngine />}
+    element={
+      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
+        <PlanningPage />
+      </div>
+    }
   />,
   // <Route key="erp-sales" path="/erp/sales" element={<SalesOrders />} />,
 ];

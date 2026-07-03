@@ -67,7 +67,7 @@ const getBomSends = async (req, res) => {
 
     return res.json({ success: true, data: enriched });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 }
 
@@ -78,7 +78,7 @@ const getBomSend = async (req, res) => {
       where: { id: req.params.id },
     });
     if (!send)
-      return res.status(404).json({ success: false, error: "BOM not found" });
+      return res.status(404).json({ success: false, error: "BOM not found", code: 'NOT_FOUND' });
 
     let plannedDate = null,
       planCode = null;
@@ -144,7 +144,7 @@ const getBomSend = async (req, res) => {
       data: { ...send, plannedDate, planCode, lines },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 }
 

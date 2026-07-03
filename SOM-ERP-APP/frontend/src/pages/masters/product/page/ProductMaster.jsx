@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import { productApi } from '../../../../api/masters.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import ProductTable from '../components/ProductTable.jsx'
-import ProductForm from '../components/ProductForm.jsx'
+import { Button, BackButton } from '../../../../components/ui'
+import ProductTable from '../components/product-table/ProductTable.jsx'
+import ProductForm from '../components/product-form/ProductForm.jsx'
 
 export default function ProductMaster() {
   const [items, setItems]      = useState([])
@@ -50,9 +51,7 @@ export default function ProductMaster() {
           <p className="text-sm text-gray-500 mt-1">Manage finished product codes, names and plant</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={openAdd} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium">
-            + Add New Product
-          </button>
+          <Button variant="success" icon={Plus} onClick={openAdd}>Add New Product</Button>
           <BackButton />
         </div>
       </div>

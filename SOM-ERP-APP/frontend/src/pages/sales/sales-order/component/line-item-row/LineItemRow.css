@@ -1,0 +1,126 @@
+/* LineItemRow */
+
+.lir-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lir-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lir-row-header__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lir-line-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lir-mem-badge {
+  font-size: 11px;
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.lir-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.lir-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.lir-col {
+  min-width: 0;
+}
+
+.lir-cp-known {
+  margin-left: 6px;
+  color: #16a34a;
+  font-weight: 400;
+}
+
+.lir-qty-row {
+  display: flex;
+  gap: 6px;
+}
+
+.lir-qty-input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.lir-uom-select {
+  flex-shrink: 0;
+  width: 68px;
+  padding: 8px 4px;
+}
+
+.lir-section-divider {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.lir-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.lir-label-max-w {
+  max-width: 260px;
+}
+
+.lir-label-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.lir-label-details-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.lir-label-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #166534;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.lir-custom-pack-input {
+  margin-top: 6px;
+  border-color: #bbf7d0;
+}

@@ -1,9 +1,9 @@
-/**
+﻿/**
  * NotificationBell — polls for unread count, shows dropdown list
  */
 import { useState, useEffect, useRef } from 'react'
 import { notifApi } from '../../api/notifications.js'
-import { useAuth } from './AuthContext.jsx'
+import { useAuth } from '../auth-context/AuthContext.jsx'
 
 export default function NotificationBell() {
   const { user } = useAuth()

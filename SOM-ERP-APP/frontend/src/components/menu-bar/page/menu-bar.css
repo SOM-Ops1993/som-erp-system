@@ -1,0 +1,101 @@
+/* ── Sidebar shell ── */
+.sidebar {
+  background: linear-gradient(180deg, #0f1117 0%, #13161f 60%, #0d1018 100%);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06), 4px 0 24px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 20;
+}
+
+.sidebar--open {
+  width: 250px;
+  min-width: 224px;
+}
+
+.sidebar--collapsed {
+  width: 60px;
+  min-width: 60px;
+}
+
+/* ── Nav scroll area ── */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 0;
+}
+
+/* ── Mobile-only drawer behavior ──
+   Limited screen space means the sidebar can't just sit in the flex row like
+   on desktop: expanded it would squeeze content into a sliver, and collapsed
+   it should hide entirely instead of leaving the icon rail behind. So below
+   768px (matches the JS breakpoint that picks the initial sidebarOpen state)
+   it becomes a fixed overlay drawer instead. */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 50;
+  }
+
+  .sidebar--open {
+    width: 75vw;
+    min-width: 0;
+  }
+
+  .sidebar--collapsed {
+    width: 0;
+    min-width: 0;
+    box-shadow: none;
+  }
+}
+
+/* Dims the page behind the open drawer; tapping it closes the sidebar */
+.sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 40;
+  }
+}
+
+/* Floating reopen control — the only trace of the sidebar left once it's
+   fully collapsed on mobile, since the header's expand button collapses
+   away with it */
+.sidebar-mobile-fab {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .sidebar-mobile-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 14px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #13161f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #a5b4fc;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    z-index: 45;
+  }
+}

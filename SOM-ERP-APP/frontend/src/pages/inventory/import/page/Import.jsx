@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { importApi } from '../../../../api/inventory.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import ResultCard from '../components/ResultCard.jsx'
-import FormatGuide from '../components/FormatGuide.jsx'
+import { BackButton, Button } from '../../../../components/ui'
+import ResultCard from '../components/result-card/ResultCard.jsx'
+import FormatGuide from '../components/format-guide/FormatGuide.jsx'
 
 export default function Import() {
   const [file, setFile] = useState(null)
@@ -77,14 +77,24 @@ export default function Import() {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">{error}</div>}
 
       <div className="flex gap-3 mb-6">
-        <button onClick={analyze} disabled={!file || loading}
-          className="flex-1 border-2 border-blue-500 text-blue-600 py-3 rounded-lg hover:bg-blue-50 font-semibold disabled:opacity-50">
-          {loading ? '🔍 Analyzing...' : '🔍 Analyze & Preview'}
-        </button>
-        <button onClick={execute} disabled={!file || executing}
-          className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold disabled:opacity-50">
-          {executing ? '⬆️ Importing...' : '⬆️ Import to Database'}
-        </button>
+        <Button
+          variant="outline"
+          fullWidth
+          loading={loading}
+          disabled={!file}
+          onClick={analyze}
+        >
+          {loading ? 'Analyzing...' : 'Analyze & Preview'}
+        </Button>
+        <Button
+          variant="success"
+          fullWidth
+          loading={executing}
+          disabled={!file}
+          onClick={execute}
+        >
+          {executing ? 'Importing...' : 'Import to Database'}
+        </Button>
       </div>
 
       {/* Preview results */}

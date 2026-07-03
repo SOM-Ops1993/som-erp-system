@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { sfgApi } from '../../../../api/inventory.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
+import { Button, BackButton } from '../../../../components/ui'
+import { RefreshCw, Save } from 'lucide-react'
+import './SFG.css'
 
 const STATUS_COLOR = {
   OPEN:     'bg-gray-100 text-gray-600',
@@ -78,9 +80,7 @@ export default function SFG() {
           <p className="text-sm text-gray-500 mt-1">Semi-Finished Goods — visible after all RM for the indent is fully issued</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={loadData} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-600">
-            ↻ Refresh
-          </button>
+          <Button variant="outline-gray" icon={RefreshCw} onClick={loadData}>Refresh</Button>
           <BackButton />
         </div>
       </div>
@@ -220,14 +220,12 @@ export default function SFG() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => handleSave(sfg.sfgId)} disabled={isSaving}
-                        className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition">
-                        {isSaving ? 'Saving…' : '💾 Save Changes'}
-                      </button>
-                      <button onClick={() => setLocalEdits(prev => ({ ...prev, [sfg.sfgId]: { packedQty: packed, sfgQty } }))}
-                        className="border border-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm hover:bg-gray-100 transition">
+                      <Button variant="primary" icon={Save} loading={isSaving} onClick={() => handleSave(sfg.sfgId)}>
+                        Save Changes
+                      </Button>
+                      <Button variant="secondary" onClick={() => setLocalEdits(prev => ({ ...prev, [sfg.sfgId]: { packedQty: packed, sfgQty } }))}>
                         Reset
-                      </button>
+                      </Button>
                     </div>
                     <div className="mt-4 space-y-2">
                       <div>

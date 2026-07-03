@@ -8,7 +8,7 @@ const deleteSalesOrder = async (req, res) => {
     await prisma.salesOrder.delete({ where: { id: req.params.id } });
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -20,7 +20,7 @@ const deleteSalesOrderItem = async (req, res) => {
     await prisma.salesOrderItem.delete({ where: { id: req.params.itemId } });
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

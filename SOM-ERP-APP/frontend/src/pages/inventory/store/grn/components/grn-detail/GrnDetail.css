@@ -1,0 +1,253 @@
+/* GrnDetail print layout */
+
+.gd-letterhead {
+  border-bottom: 3px solid #0f172a;
+  padding: 28px 32px 20px;
+}
+
+.gd-letterhead-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.gd-company-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.gd-company-addr {
+  font-size: 11px;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.gd-company-addr2 {
+  font-size: 11px;
+  color: #475569;
+}
+
+.gd-doc-label {
+  text-align: right;
+}
+
+.gd-doc-tag {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.gd-doc-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e3a5f;
+  margin-top: 2px;
+}
+
+.gd-doc-number {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.gd-meta-grid {
+  padding: 20px 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.gd-items-section {
+  padding: 20px 32px;
+}
+
+.gd-items-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.gd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.gd-th-center {
+  padding: 9px 12px;
+  text-align: center;
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.gd-th-left {
+  padding: 9px 12px;
+  text-align: left;
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.gd-thead-row {
+  background: #0f172a;
+}
+
+.gd-td-center {
+  padding: 9px 12px;
+  text-align: center;
+}
+
+.gd-td-index {
+  padding: 9px 12px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.gd-td-name {
+  padding: 9px 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.gd-td-code {
+  padding: 9px 12px;
+  font-family: monospace;
+  font-size: 11px;
+  color: #3b82f6;
+}
+
+.gd-td-mono {
+  padding: 9px 12px;
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.gd-td-bold {
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.gd-td-total-qty {
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gd-td-uom {
+  padding: 9px 12px;
+  text-align: center;
+  color: #64748b;
+}
+
+.gd-tr-even {
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.gd-tr-odd {
+  border-bottom: 1px solid #f1f5f9;
+  background: white;
+}
+
+.gd-tfoot-row {
+  background: #f1f5f9;
+  border-top: 2px solid #cbd5e1;
+}
+
+.gd-tfoot-label {
+  padding: 9px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.gd-tfoot-bags {
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.gd-tfoot-total {
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.gd-remarks {
+  padding: 0 32px 16px;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 4px;
+}
+
+.gd-remarks-text {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 16px;
+}
+
+.gd-sig-strip {
+  margin: 20px 42px 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 200px;
+}
+
+.gd-sig-line {
+  border-top: 2px solid #1e293b;
+  padding-top: 6px;
+  margin-top: 32px;
+}
+
+.gd-sig-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* ─── Print ────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Force backgrounds and colours to appear in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide everything on the page */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Un-hide the printable GRN content and all its children */
+  .grn-printable,
+  .grn-printable * {
+    visibility: visible !important;
+  }
+
+  /* Stretch the printable block to fill the page at the top-left corner */
+  .grn-printable {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

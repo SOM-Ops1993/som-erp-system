@@ -1,0 +1,57 @@
+/* ScanFeedback */
+
+.sf-wrap {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 260px;
+}
+
+.sf-wrap--success {
+  background: #f0fdf4;
+  border: 1px solid #16a34a;
+  color: #15803d;
+}
+
+.sf-wrap--loading {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.sf-wrap--error {
+  background: #fef2f2;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+}
+
+.sf-icon {
+  font-size: 16px;
+}
+
+.sf-msg {
+  flex: 1;
+}
+
+.sf-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.sf-close:hover {
+  opacity: 1;
+}

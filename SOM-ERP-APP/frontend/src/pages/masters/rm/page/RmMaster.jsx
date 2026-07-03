@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import { rmApi } from '../../../../api/inventory.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import RmTable from '../components/RmTable.jsx'
-import RmForm  from '../components/RmForm.jsx'
+import './RmMaster.css'
+import { Button, BackButton } from '../../../../components/ui'
+import RmTable from '../components/rm-table/RmTable.jsx'
+import RmForm  from '../components/rm-form/RmForm.jsx'
 
 export default function RmMaster() {
   const [items, setItems]       = useState([])
@@ -68,9 +70,7 @@ export default function RmMaster() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
-            + Add New Item
-          </button>
+          <Button variant="primary" icon={Plus} onClick={openAdd}>Add New Item</Button>
           <BackButton />
         </div>
       </div>

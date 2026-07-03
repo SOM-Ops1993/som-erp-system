@@ -2,21 +2,21 @@ import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 import { createNotification } from '../../../../services/notification-service.js'
 
-export async function createStockAdjustment(req, res) {
+export const createStockAdjustment = async (req, res) => {
   const { pack_id, reason_code, qty_after, notes } = req.body || {}
   if (!pack_id || !reason_code || qty_after === undefined)
-    return res.status(400).json({ success: false, error: 'pack_id, reason_code, qty_after required' })
+    return res.status(400).json({ success: false, error: 'pack_id, reason_code, qty_after required', code: 'VALIDATION_ERROR' })
 
   try {
     const rc = await prisma.reasonCode.findFirst({
       where: { category: 'stock_adjustment', code: reason_code, isActive: true },
     })
     if (!rc)
-      return res.status(400).json({ success: false, error: `Invalid reason_code: ${reason_code}. Must be from predefined list.` })
+      return res.status(400).json({ success: false, error: `Invalid reason_code: ${reason_code}. Must be from predefined list.`, code: 'VALIDATION_ERROR' })
 
     const pack = await prisma.erpPack.findUnique({ where: { packId: pack_id } })
-    if (!pack) return res.status(404).json({ success: false, error: 'Pack not found' })
-    if (!pack.qrConfirmed) return res.status(400).json({ success: false, error: 'Cannot adjust pack without QR confirmation' })
+    if (!pack) return res.status(404).json({ success: false, error: 'Pack not found', code: 'NOT_FOUND' })
+    if (!pack.qrConfirmed) return res.status(400).json({ success: false, error: 'Cannot adjust pack without QR confirmation', code: 'VALIDATION_ERROR' })
 
     const qty_before = Number(pack.qtyRemaining)
     const delta = Number(qty_after) - qty_before
@@ -47,17 +47,17 @@ export async function createStockAdjustment(req, res) {
     await writeAudit({ ...auditUser(req), action: 'CREATE', tableName: 'stock_adjustments', recordId: adj.adjustmentId, newValue: req.body })
     return res.status(201).json({ success: true, data: adj })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
-}
+};
 
-export async function approveStockAdjustment(req, res) {
+export const approveStockAdjustment = async (req, res) => {
   try {
     const adj = await prisma.stockAdjustment.findUnique({ where: { adjustmentId: req.params.id } })
-    if (!adj) return res.status(404).json({ success: false, error: 'Adjustment not found' })
-    if (adj.status !== 'pending') return res.status(400).json({ success: false, error: 'Adjustment is not pending' })
+    if (!adj) return res.status(404).json({ success: false, error: 'Adjustment not found', code: 'NOT_FOUND' })
+    if (adj.status !== 'pending') return res.status(400).json({ success: false, error: 'Adjustment is not pending', code: 'VALIDATION_ERROR' })
     if (adj.raisedBy?.toString() === req.user?.user_id?.toString())
-      return res.status(403).json({ success: false, error: 'Cannot approve your own adjustment. Two separate logins required.' })
+      return res.status(403).json({ success: false, error: 'Cannot approve your own adjustment. Two separate logins required.', code: 'FORBIDDEN' })
 
     const pack = await prisma.erpPack.findUnique({
       where: { packId: adj.packId },
@@ -80,17 +80,17 @@ export async function approveStockAdjustment(req, res) {
     await writeAudit({ ...auditUser(req), action: 'APPROVE', tableName: 'stock_adjustments', recordId: req.params.id, newValue: { approved: true, qty_applied: adj.qtyAfter } })
     return res.json({ success: true, message: 'Adjustment approved and applied' })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
-}
+};
 
-export async function rejectStockAdjustment(req, res) {
+export const rejectStockAdjustment = async (req, res) => {
   try {
     const adj = await prisma.stockAdjustment.findFirst({
       where: { adjustmentId: req.params.id, status: 'pending' },
       select: { notes: true },
     })
-    if (!adj) return res.status(404).json({ success: false, error: 'Adjustment not found or not pending' })
+    if (!adj) return res.status(404).json({ success: false, error: 'Adjustment not found or not pending', code: 'NOT_FOUND' })
 
     const newNotes = adj.notes
       ? `${adj.notes} | Rejected: ${req.body?.reason || ''}`
@@ -108,27 +108,39 @@ export async function rejectStockAdjustment(req, res) {
     await writeAudit({ ...auditUser(req), action: 'REJECT', tableName: 'stock_adjustments', recordId: req.params.id })
     return res.json({ success: true, message: 'Adjustment rejected' })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
-}
+};
 
-export async function listStockAdjustments(req, res) {
+export const listStockAdjustments = async (req, res) => {
   try {
     const { status, limit = 50, offset = 0 } = req.query
-    // Needs raised_by_name and approved_by_name from users — keep as raw
-    const data = await prisma.$queryRaw`
-      SELECT sa.*, p.lot_number, p.item_code,
-             u1.full_name AS raised_by_name, u2.full_name AS approved_by_name
-      FROM stock_adjustments sa
-      JOIN erp_packs p ON p.pack_id = sa.pack_id
-      LEFT JOIN users u1 ON u1.user_id = sa.raised_by
-      LEFT JOIN users u2 ON u2.user_id = sa.approved_by
-      WHERE (${status || null}::text IS NULL OR sa.status = ${status || null})
-      ORDER BY sa.raised_at DESC
-      LIMIT ${Number(limit)} OFFSET ${Number(offset)}
-    `
+
+    const adjs = await prisma.stockAdjustment.findMany({
+      where:   status ? { status } : {},
+      include: { pack: { select: { lotNumber: true, itemCode: true } } },
+      orderBy: { raisedAt: 'desc' },
+      take:    Number(limit),
+      skip:    Number(offset),
+    })
+
+    const userIds = [...new Set([...adjs.map(a => a.raisedBy), ...adjs.map(a => a.approvedBy)].filter(Boolean))]
+    const users   = userIds.length
+      ? await prisma.user.findMany({ where: { userId: { in: userIds } }, select: { userId: true, fullName: true } })
+      : []
+    const userMap = Object.fromEntries(users.map(u => [u.userId, u.fullName]))
+
+    const data = adjs.map(a => ({
+      ...a,
+      lot_number:       a.pack?.lotNumber   ?? null,
+      item_code:        a.pack?.itemCode    ?? null,
+      raised_by_name:   userMap[a.raisedBy]   ?? null,
+      approved_by_name: userMap[a.approvedBy] ?? null,
+      pack: undefined,
+    }))
+
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
-}
+};

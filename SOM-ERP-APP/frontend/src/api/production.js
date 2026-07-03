@@ -1,6 +1,5 @@
-import { api, erpApi } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
-// ── Legacy unauthenticated production APIs ────────────────────────────────────
 
 export const productionApi = {
   list:          (params)            => api.get('/production', { params }),
@@ -31,13 +30,26 @@ export const indentApi = {
   markPoSent:      (indentIds)             => api.post('/indent/mark-po-sent', { indentIds }),
 }
 
-// ── ERP BOM issuance (authenticated) ─────────────────────────────────────────
+
+// ── Plant scheduling tasks (planning/production pages) ────────────────────────
+export const planTasksApi = {
+  list:         (params) => api.get('/plan-tasks', { params }),
+  create:       (data)   => api.post('/plan-tasks', data),
+  update:       (id, data) => api.put(`/plan-tasks/${id}`, data),
+  delete:       (id)     => api.delete(`/plan-tasks/${id}`),
+  sendSchedule: (date)   => api.post('/plan-tasks/send-schedule', { date }),
+  // Autocomplete lookups
+  searchSalesOrders:    (q)      => api.get('/plan-tasks/search/sales-orders',      { params: { q } }),
+  getSalesOrderItems:   (diNo)   => api.get('/plan-tasks/search/sales-order-items', { params: { diNo } }),
+  searchProducts:       (q, plant) => api.get('/plan-tasks/search/products',        { params: { q, plant } }),
+  searchEquipment:      (plant)   => api.get('/plan-tasks/search/equipment',        { params: { plant } }),
+}
 
 export const bomIssuanceApi = {
-  pendingJobs:  ()         => erpApi.get('/erp/bom-issuance/pending-jobs'),
-  getJob:       (id)       => erpApi.get(`/erp/bom-issuance/job/${id}`),
-  issue:        (data)     => erpApi.post('/erp/bom-issuance/issue', data),
-  scrapJob:     (id, data) => erpApi.post(`/erp/bom-issuance/jobs/${id}/scrap`, data),
-  reprocessJob: (id)       => erpApi.post(`/erp/bom-issuance/jobs/${id}/reprocess`),
-  history:      (params)   => erpApi.get('/erp/bom-issuance/history', { params }),
+  pendingJobs:  ()         => api.get('/bom-issuance/pending-jobs'),
+  getJob:       (id)       => api.get(`/bom-issuance/job/${id}`),
+  issue:        (data)     => api.post('/bom-issuance/issue', data),
+  scrapJob:     (id, data) => api.post(`/bom-issuance/jobs/${id}/scrap`, data),
+  reprocessJob: (id)       => api.post(`/bom-issuance/jobs/${id}/reprocess`),
+  history:      (params)   => api.get('/bom-issuance/history', { params }),
 }

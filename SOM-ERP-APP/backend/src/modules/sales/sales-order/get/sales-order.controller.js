@@ -60,7 +60,7 @@ const getSalesOrderById = async (req, res) => {
   });
 
   if (!order)
-    return res.status(404).json({ success: false, error: "Order not found" });
+    return res.status(404).json({ success: false, error: "Order not found", code: 'NOT_FOUND' });
 
   return res.json({ success: true, data: order });
 };
@@ -114,7 +114,7 @@ const getCompanies = async (req, res) => {
     });
     return res.json({ success: true, data: companies });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

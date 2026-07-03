@@ -1,0 +1,148 @@
+/* InwardTable */
+
+.it-empty {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.it-empty-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.it-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.it-empty-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.it-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.it-toolbar {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.it-toolbar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.it-badge {
+  padding: 3px 10px;
+  background: #eff6ff;
+  color: #3b82f6;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.it-scroll {
+  overflow-x: auto;
+}
+
+.it-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.it-thead-row {
+  background: #f8fafc;
+}
+
+.it-th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.it-row {
+  border-top: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+
+.it-row--even { background: #fff; }
+.it-row--odd  { background: #fafafa; }
+.it-row:hover { background: #f0f9ff; }
+
+.it-td { padding: 12px 14px; }
+
+.it-td-supplier {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.it-td-text {
+  font-size: 13px;
+  color: #475569;
+}
+
+.it-td-date {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.it-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.it-pagination {
+  padding: 8px 16px;
+}
+
+/* StatusBadge (shared with OutwardTable) */
+.it-status {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.it-status--pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.it-status--approved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.it-status--rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* DeleteRequestBadge */
+.it-del-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

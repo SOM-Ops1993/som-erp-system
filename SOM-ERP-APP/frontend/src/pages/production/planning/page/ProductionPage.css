@@ -1,0 +1,17 @@
+/* ProductionPage */
+
+.prodp-root {
+  height: 100%;
+}
+
+.prodp-topbar {
+  height: 56px;
+}
+
+.prodp-task-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.prodp-history-search {
+  min-width: 260px;
+}

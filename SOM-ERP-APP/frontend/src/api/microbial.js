@@ -1,6 +1,5 @@
-import { api, erpApi } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
-// ── Legacy microbial SFG API — /microbial-sfg/* (unauthenticated) ─────────────
 
 export const microbialSfgApi = {
   // Microbe master
@@ -28,16 +27,15 @@ export const microbialSfgApi = {
   cancelAllocation:   (id)      => api.delete(`/microbial-sfg/planning/allocations/${id}`),
 }
 
-// ── ERP microbial API — /erp/microbial/* (authenticated) ─────────────────────
 
 export const microbialApi = {
-  containers:      (params)     => erpApi.get('/erp/microbial/containers', { params }),
-  getContainer:    (id)         => erpApi.get(`/erp/microbial/containers/${id}`),
-  createContainer: (data)       => erpApi.post('/erp/microbial/containers', data),
-  updateContainer: (id, data)   => erpApi.patch(`/erp/microbial/containers/${id}`, data),
-  allocate:        (data)       => erpApi.post('/erp/microbial/allocate', data),
-  createTx:        (data)       => erpApi.post('/erp/microbial/transactions', data),
-  confirmReceipt:  (id, data)   => erpApi.patch(`/erp/microbial/transactions/${id}/confirm-receipt`, data),
-  transactions:    (params)     => erpApi.get('/erp/microbial/transactions', { params }),
-  decayReport:     ()           => erpApi.get('/erp/microbial/decay-report'),
+  containers:      (params)     => api.get('/microbial/containers', { params }),
+  getContainer:    (id)         => api.get(`/microbial/containers/${id}`),
+  createContainer: (data)       => api.post('/microbial/containers', data),
+  updateContainer: (id, data)   => api.patch(`/microbial/containers/${id}`, data),
+  allocate:        (data)       => api.post('/microbial/allocate', data),
+  createTx:        (data)       => api.post('/microbial/transactions', data),
+  confirmReceipt:  (id, data)   => api.patch(`/microbial/transactions/${id}/confirm-receipt`, data),
+  transactions:    (params)     => api.get('/microbial/transactions', { params }),
+  decayReport:     ()           => api.get('/microbial/decay-report'),
 }

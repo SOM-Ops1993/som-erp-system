@@ -2,15 +2,15 @@
  * Production Planning Engine — 8-step analysis, plan creation, submit/publish, batch job tracking
  */
 import { useState, useEffect, useCallback } from 'react'
-import Pagination from '../../components/erp/Pagination.jsx'
+import Pagination from '../../components/pagination/Pagination.jsx'
 import { planningApi } from '../../api/planning.js'
 import { erpReasonCodesApi } from '../../api/masters.js'
 import { salesApi } from '../../api/sales.js'
-import { useAuth } from '../../components/erp/AuthContext.jsx'
+import { useAuth } from '../../components/auth/AuthContext.jsx'
+import { Button } from '../../components/ui'
 
 const inputStyle = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }
 const labelStyle = { display: 'block', fontSize: '11px', color: '#64748b', fontWeight: 600, marginBottom: '4px' }
-const btnPrimary = (disabled) => ({ padding: '9px 18px', background: disabled ? '#94a3b8' : '#1e3a5f', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer' })
 
 const statusBadge = (status) => {
   const cfg = {
@@ -122,9 +122,9 @@ function AnalysisPanel({ result, diNumber, onPlanCreated }) {
       {/* Create Plan Button */}
       <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
         {!planForm.show ? (
-          <button onClick={() => setPlanForm(f => ({ ...f, show: true }))} style={btnPrimary(false)}>
+          <Button variant="primary" onClick={() => setPlanForm(f => ({ ...f, show: true }))}>
             Create Production Plan →
-          </button>
+          </Button>
         ) : (
           <div>
             <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700 }}>Create Plan for {diNumber}</h4>
@@ -134,8 +134,8 @@ function AnalysisPanel({ result, diNumber, onPlanCreated }) {
               <div><label style={labelStyle}>NOTES</label><input value={planForm.notes} onChange={e => setPlanForm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional notes" style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
-              <button onClick={createPlan} disabled={saving} style={btnPrimary(saving)}>{saving ? 'Creating…' : 'Create Draft Plan'}</button>
-              <button onClick={() => setPlanForm(f => ({ ...f, show: false }))} style={{ padding: '9px 14px', background: '#f1f5f9', color: '#1e293b', border: 'none', borderRadius: '7px', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+              <Button variant="primary" onClick={createPlan} loading={saving}>{saving ? 'Creating…' : 'Create Draft Plan'}</Button>
+              <Button variant="secondary" onClick={() => setPlanForm(f => ({ ...f, show: false }))}>Cancel</Button>
             </div>
           </div>
         )}
@@ -215,7 +215,7 @@ function PlanDetail({ plan, onClose, onRefresh }) {
             <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>DI: {d.di_number}</div>
             <div style={{ marginTop: '6px' }}>{statusBadge(d.status)}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</Button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', fontSize: '13px' }}>
@@ -226,8 +226,8 @@ function PlanDetail({ plan, onClose, onRefresh }) {
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-          {canSubmit && <button onClick={submit} style={{ padding: '9px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Submit for Review</button>}
-          {canPublish && <button onClick={publish} style={{ padding: '9px 16px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Publish Plan</button>}
+          {canSubmit && <Button variant="primary" onClick={submit}>Submit for Review</Button>}
+          {canPublish && <Button variant="success" onClick={publish}>Publish Plan</Button>}
         </div>
 
         {/* Batch Jobs */}
@@ -244,13 +244,13 @@ function PlanDetail({ plan, onClose, onRefresh }) {
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {job.status === 'pending' && hasRole(['plant_supervisor', 'admin']) && (
-                <button onClick={() => startJob(job.id)} style={{ padding: '6px 12px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>▶ Start</button>
+                <Button variant="success" size="sm" onClick={() => startJob(job.id)}>▶ Start</Button>
               )}
               {job.status === 'in_progress' && hasRole(['qc_person', 'admin']) && (
-                <button onClick={() => setQcForm({ show: true, jobId: job.id, result: 'pass', notes: '', cfu_count: '' })} style={{ padding: '6px 12px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>QC Result</button>
+                <Button variant="purple" size="sm" onClick={() => setQcForm({ show: true, jobId: job.id, result: 'pass', notes: '', cfu_count: '' })}>QC Result</Button>
               )}
               {['pending', 'in_progress'].includes(job.status) && hasRole(['plant_supervisor', 'admin']) && (
-                <button onClick={() => setDelayForm({ show: true, jobId: job.id, reason: '', notes: '' })} style={{ padding: '6px 12px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Log Delay</button>
+                <Button variant="warning" size="sm" onClick={() => setDelayForm({ show: true, jobId: job.id, reason: '', notes: '' })}>Log Delay</Button>
               )}
             </div>
           </div>
@@ -273,8 +273,8 @@ function PlanDetail({ plan, onClose, onRefresh }) {
               <div style={{ gridColumn: 'span 2' }}><label style={labelStyle}>NOTES</label><input value={qcForm.notes} onChange={e => setQcForm(f => ({ ...f, notes: e.target.value }))} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <button onClick={submitQc} disabled={saving} style={btnPrimary(saving)}>{saving ? 'Saving…' : 'Save QC'}</button>
-              <button onClick={() => setQcForm({ show: false, jobId: null, result: 'pass', notes: '', cfu_count: '' })} style={{ padding: '9px 14px', background: '#f1f5f9', color: '#1e293b', border: 'none', borderRadius: '7px', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+              <Button variant="primary" onClick={submitQc} loading={saving}>{saving ? 'Saving…' : 'Save QC'}</Button>
+              <Button variant="secondary" onClick={() => setQcForm({ show: false, jobId: null, result: 'pass', notes: '', cfu_count: '' })}>Cancel</Button>
             </div>
           </div>
         )}
@@ -294,8 +294,8 @@ function PlanDetail({ plan, onClose, onRefresh }) {
               <div><label style={labelStyle}>NOTES</label><input value={delayForm.notes} onChange={e => setDelayForm(f => ({ ...f, notes: e.target.value }))} style={inputStyle} /></div>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <button onClick={submitDelay} disabled={saving} style={btnPrimary(saving)}>{saving ? 'Saving…' : 'Log Delay'}</button>
-              <button onClick={() => setDelayForm({ show: false, jobId: null, reason: '', notes: '' })} style={{ padding: '9px 14px', background: '#f1f5f9', color: '#1e293b', border: 'none', borderRadius: '7px', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+              <Button variant="warning" onClick={submitDelay} loading={saving}>{saving ? 'Saving…' : 'Log Delay'}</Button>
+              <Button variant="secondary" onClick={() => setDelayForm({ show: false, jobId: null, reason: '', notes: '' })}>Cancel</Button>
             </div>
           </div>
         )}
@@ -447,9 +447,9 @@ export default function PlanningEngine() {
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input value={diInput} onChange={e => setDiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && runAnalysis()} placeholder="Enter DI / Order Number to analyse…" style={{ ...inputStyle, flex: 1 }} />
-              <button onClick={runAnalysis} disabled={analysing || !diInput} style={btnPrimary(analysing || !diInput)}>
+              <Button variant="primary" onClick={runAnalysis} disabled={!diInput} loading={analysing}>
                 {analysing ? '⟳ Analysing…' : 'Run Analysis'}
-              </button>
+              </Button>
             </div>
             {analysisError && <div style={{ marginTop: '12px', padding: '8px 12px', background: '#fef2f2', borderRadius: '6px', color: '#dc2626', fontSize: '12px' }}>{analysisError}</div>}
           </div>
@@ -470,9 +470,9 @@ export default function PlanningEngine() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>Time-Motion Data</h3>
             {hasRole(['plant_supervisor', 'admin']) && (
-              <button onClick={() => setTmForm(f => ({ ...f, show: !f.show }))} style={btnPrimary(false)}>
+              <Button variant={tmForm.show ? 'secondary' : 'primary'} onClick={() => setTmForm(f => ({ ...f, show: !f.show }))}>
                 {tmForm.show ? 'Cancel' : '+ Log Time-Motion'}
-              </button>
+              </Button>
             )}
           </div>
 
@@ -487,7 +487,7 @@ export default function PlanningEngine() {
                 <div><label style={labelStyle}>NOTES</label><input value={tmForm.notes} onChange={e => setTmForm(f => ({ ...f, notes: e.target.value }))} style={inputStyle} /></div>
               </div>
               <div style={{ marginTop: '14px' }}>
-                <button onClick={submitTm} disabled={tmSaving} style={btnPrimary(tmSaving)}>{tmSaving ? 'Saving…' : 'Log Entry'}</button>
+                <Button variant="primary" onClick={submitTm} loading={tmSaving}>{tmSaving ? 'Saving…' : 'Log Entry'}</Button>
               </div>
             </div>
           )}

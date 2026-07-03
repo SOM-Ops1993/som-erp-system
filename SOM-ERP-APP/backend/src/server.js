@@ -8,7 +8,7 @@ import { existsSync } from "fs";
 import { startCronJobs } from "./services/cron-jobs.js";
 import { runAutoSeed } from "./services/auto-seed.js";
 import router from "./routers/routers.js";
-import { connectDb, disconnectDb } from "./db.js";
+import { connectDb, disconnectDb } from "../config/db.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

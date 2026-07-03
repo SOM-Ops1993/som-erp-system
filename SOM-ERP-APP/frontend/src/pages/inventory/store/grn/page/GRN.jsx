@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+import './GRN.css'
 import { grnApi } from '../../../../../api/inventory.js'
-import GrnList   from '../components/GrnList.jsx'
-import GrnDetail from '../components/GrnDetail.jsx'
+import { ErrorModal } from '../../../../../components/ui'
+import GrnList   from '../components/grn-list/GrnList.jsx'
+import GrnDetail from '../components/grn-detail/GrnDetail.jsx'
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -15,6 +17,7 @@ export default function GRN() {
   const [selected,      setSelected]      = useState(null)
   const [detail,        setDetail]        = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const [errModal, setErrModal] = useState({ open: false, message: '' })
 
   const filteredGrns = list.filter(grn => {
     if (!search.trim()) return true
@@ -40,12 +43,12 @@ export default function GRN() {
     try {
       const res = await grnApi.detail(grn.invoiceNo, grn.supplier)
       setDetail(res.data)
-    } catch (e) { alert('Failed to load GRN: ' + e.message) }
+    } catch (e) { setErrModal({ open: true, message: 'Failed to load GRN: ' + e.message }) }
     setLoadingDetail(false)
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ minHeight: 0 }}>
+    <div className="flex flex-col h-full grn-layout">
       <div className="flex flex-1 min-h-0">
         <GrnList
           list={filteredGrns}
@@ -64,6 +67,11 @@ export default function GRN() {
           />
         </div>
       </div>
+      <ErrorModal
+        open={errModal.open}
+        message={errModal.message}
+        onClose={() => setErrModal({ open: false, message: '' })}
+      />
     </div>
   )
 }

@@ -1,0 +1,30 @@
+/* GateTabs */
+
+.gt-wrap {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.gt-btn {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: transparent;
+  color: #64748b;
+  box-shadow: none;
+}
+
+.gt-btn--active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}

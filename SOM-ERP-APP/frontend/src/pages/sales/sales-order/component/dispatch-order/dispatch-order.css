@@ -1,0 +1,31 @@
+/* DispatchOrder */
+
+/* Line header background: 2-state modifier classes */
+.do-line-header {
+  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.do-line-header--ready {
+  background: #f0fdf4;
+}
+
+.do-line-header--blocked {
+  background: #f8fafc;
+}
+
+/* Line product name: 2-state modifier classes */
+.do-line-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.do-line-name--ready {
+  color: #16a34a;
+}
+
+.do-line-name--blocked {
+  color: #64748b;
+}

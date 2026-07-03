@@ -1,13 +1,12 @@
-import { api, erpApi } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
-// ── Legacy unauthenticated master APIs ────────────────────────────────────────
 
 export const productApi = {
-  list:   (params)     => erpApi.get('/products', { params }),
-  get:    (code)       => erpApi.get(`/products/${encodeURIComponent(code)}`),
-  create: (data)       => erpApi.post('/products', data),
-  update: (code, data) => erpApi.put(`/products/${encodeURIComponent(code)}`, data),
-  delete: (code)       => erpApi.delete(`/products/${encodeURIComponent(code)}`),
+  list:   (params)     => api.get('/products', { params }),
+  get:    (code)       => api.get(`/products/${encodeURIComponent(code)}`),
+  create: (data)       => api.post('/products', data),
+  update: (code, data) => api.put(`/products/${encodeURIComponent(code)}`, data),
+  delete: (code)       => api.delete(`/products/${encodeURIComponent(code)}`),
 }
 
 export const equipmentApi = {
@@ -25,67 +24,66 @@ export const packingMaterialApi = {
 }
 
 export const recipeApi = {
-  list:           (params)   => erpApi.get('/recipe', { params }),
-  products:       ()         => erpApi.get('/recipe/products'),
-  bulkSave:       (rows)     => erpApi.post('/recipe/bulk-save', { rows }),
-  deleteRow:      (id)       => erpApi.delete(`/recipe/${id}`),
-  deleteProduct:  (code)     => erpApi.delete(`/recipe/product/${code}`),
-  checkRmMapping: ()         => erpApi.get('/recipe/check-rm-mapping'),
-  fixRmMapping:   (mappings) => erpApi.post('/recipe/fix-rm-mapping', { mappings }),
+  list:           (params)   => api.get('/recipe', { params }),
+  products:       ()         => api.get('/recipe/products'),
+  bulkSave:       (rows)     => api.post('/recipe/bulk-save', { rows }),
+  deleteRow:      (id)       => api.delete(`/recipe/${id}`),
+  deleteProduct:  (code)     => api.delete(`/recipe/product/${code}`),
+  checkRmMapping: ()         => api.get('/recipe/check-rm-mapping'),
+  fixRmMapping:   (mappings) => api.post('/recipe/fix-rm-mapping', { mappings }),
 }
 
-// ── ERP master data (authenticated) ──────────────────────────────────────────
 
 export const erpItemsApi = {
-  list:   (params)     => erpApi.get('/erp/masters/items', { params }),
-  get:    (code)       => erpApi.get(`/erp/masters/items/${encodeURIComponent(code)}`),
-  create: (data)       => erpApi.post('/erp/masters/items', data),
-  update: (code, data) => erpApi.put(`/erp/masters/items/${encodeURIComponent(code)}`, data),
+  list:   (params)     => api.get('/masters/items', { params }),
+  get:    (code)       => api.get(`/masters/items/${encodeURIComponent(code)}`),
+  create: (data)       => api.post('/masters/items', data),
+  update: (code, data) => api.put(`/masters/items/${encodeURIComponent(code)}`, data),
 }
 
 export const erpSuppliersApi = {
-  list:   ()           => erpApi.get('/erp/masters/suppliers'),
-  create: (data)       => erpApi.post('/erp/masters/suppliers', data),
-  update: (id, data)   => erpApi.put(`/erp/masters/suppliers/${id}`, data),
+  list:   ()           => api.get('/masters/suppliers'),
+  create: (data)       => api.post('/masters/suppliers', data),
+  update: (id, data)   => api.put(`/masters/suppliers/${id}`, data),
 }
 
 export const erpPlantsApi = {
-  list:   () => erpApi.get('/erp/masters/plants'),
-  create: (data) => erpApi.post('/erp/masters/plants', data),
+  list:   () => api.get('/masters/plants'),
+  create: (data) => api.post('/masters/plants', data),
 }
 
 export const erpEquipmentApi = {
-  list:   (params)   => erpApi.get('/erp/masters/equipment', { params }),
-  create: (data)     => erpApi.post('/erp/masters/equipment', data),
-  patch:  (id, data) => erpApi.patch(`/erp/masters/equipment/${id}`, data),
+  list:   (params)   => api.get('/masters/equipment', { params }),
+  create: (data)     => api.post('/masters/equipment', data),
+  patch:  (id, data) => api.patch(`/masters/equipment/${id}`, data),
 }
 
 export const erpProductsApi = {
-  list:   (params) => erpApi.get('/erp/masters/erp-products', { params }),
-  create: (data)   => erpApi.post('/erp/masters/erp-products', data),
+  list:   (params) => api.get('/masters/erp-products', { params }),
+  create: (data)   => api.post('/masters/erp-products', data),
 }
 
 export const erpBomApi = {
-  list:   (params) => erpApi.get('/erp/masters/bom', { params }),
-  get:    (id)     => erpApi.get(`/erp/masters/bom/${id}`),
-  create: (data)   => erpApi.post('/erp/masters/bom', data),
+  list:   (params) => api.get('/masters/bom', { params }),
+  get:    (id)     => api.get(`/masters/bom/${id}`),
+  create: (data)   => api.post('/masters/bom', data),
 }
 
 export const erpStrainsApi = {
-  list:   ()     => erpApi.get('/erp/masters/strains'),
-  create: (data) => erpApi.post('/erp/masters/strains', data),
+  list:   ()     => api.get('/masters/strains'),
+  create: (data) => api.post('/masters/strains', data),
 }
 
 export const erpCustomersApi = {
-  list:   ()     => erpApi.get('/erp/masters/customers'),
-  create: (data) => erpApi.post('/erp/masters/customers', data),
+  list:   ()     => api.get('/masters/customers'),
+  create: (data) => api.post('/masters/customers', data),
 }
 
 export const erpReasonCodesApi = {
-  list: (params) => erpApi.get('/erp/masters/reason-codes', { params }),
+  list: (params) => api.get('/masters/reason-codes', { params }),
 }
 
 export const erpContainersApi = {
-  list:   (params) => erpApi.get('/erp/masters/containers', { params }),
-  create: (data)   => erpApi.post('/erp/masters/containers', data),
+  list:   (params) => api.get('/masters/containers', { params }),
+  create: (data)   => api.post('/masters/containers', data),
 }

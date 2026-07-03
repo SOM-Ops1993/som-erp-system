@@ -7,8 +7,8 @@ import { checkFifo, createFifoOverride } from "./fifo/fifo.controller.js";
 import { getStockSummary } from "./stock-summary/stock-summary.controller.js";
 
 const router = express.Router();
-const storeOrAbove = authorize(["store_person", "store_manager", "admin"]);
-const managerOrAbove = authorize(["store_manager", "admin"]);
+const storeOrAbove = authorize(["store"]);
+const managerOrAbove = authorize(["store"]);
 
 // Stock adjustments
 router.post("/adjustments", authenticate, storeOrAbove, createStockAdjustment);

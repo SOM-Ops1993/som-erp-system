@@ -1,24 +1,24 @@
-import { useState, useEffect, useCallback, Fragment } from "react";
+﻿import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   salesOrderApi,
   customerProfileApi,
   cpProfileApi,
 } from "../../../../api/sales.js";
-import { productApi } from "../../../../api/masters.js";
+import { productApi, packingMaterialApi } from "../../../../api/masters.js";
 import { STATIC_CUSTOMER_PROFILES } from "../../../../data/customerProfiles";
 import {
   STATUSES,
   STATUS_STYLE,
   STATUS_LABELS,
-  BRAND,
 } from "../shared/constants.js";
 import { fmtDate, etdDays } from "../shared/utils.js";
-import CreateSalesOrder from "../component/create-sales-order.jsx";
-import DispatchOrder from "../component/dispatch-order.jsx";
-import OrderHistory from "../component/order-history.jsx";
-import SalesFilterBar from "../component/SalesFilterBar.jsx";
-import BackButton from "../../../../components/erp/BackButton.jsx";
-import Pagination from "../../../../components/erp/Pagination.jsx";
+import CreateSalesOrder from "../component/create-sales-order/create-sales-order.jsx";
+import DispatchOrder from "../component/dispatch-order/dispatch-order.jsx";
+import OrderHistory from "../component/order-history/order-history.jsx";
+import SalesFilterBar from "../component/sales-filter-bar/SalesFilterBar.jsx";
+import { BackButton, Button, IconButton } from "../../../../components/ui";
+import Pagination from "../../../../components/pagination/Pagination.jsx";
+import { Plus, X } from "lucide-react";
 
 const EMPTY_FILTERS = {
   search: "",
@@ -31,7 +31,7 @@ const EMPTY_FILTERS = {
 // ─────────────────────────────────────────────────────────────────────────────
 // NewOrderModal — centered overlay with the CreateSalesOrder form inside
 // ─────────────────────────────────────────────────────────────────────────────
-function NewOrderModal({ editing, products, profiles, onSave, onClose }) {
+function NewOrderModal({ editing, products, profiles, packingMaterials, onSave, onClose }) {
   return (
     <div
       style={{
@@ -92,25 +92,7 @@ function NewOrderModal({ editing, products, profiles, onSave, onClose }) {
               Fill in the order details below
             </p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "#f1f5f9",
-              border: "none",
-              borderRadius: "8px",
-              width: "32px",
-              height: "32px",
-              cursor: "pointer",
-              fontSize: "16px",
-              color: "#64748b",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            ✕
-          </button>
+          <IconButton icon={X} tooltip="Close" variant="secondary" onClick={onClose} />
         </div>
 
         {/* Form body */}
@@ -119,6 +101,7 @@ function NewOrderModal({ editing, products, profiles, onSave, onClose }) {
             initial={editing || undefined}
             products={products}
             profiles={profiles}
+            packingMaterials={packingMaterials}
             onSave={onSave}
             onCancel={onClose}
           />
@@ -136,6 +119,7 @@ const SalesOrder = () => {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [profiles, setProfiles] = useState(STATIC_CUSTOMER_PROFILES);
+  const [packingMaterials, setPackingMaterials] = useState({ primary: [], secondary: [] });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -177,6 +161,17 @@ const SalesOrder = () => {
     } catch {
       /* non-critical */
     }
+
+    try {
+      const pmRes = await packingMaterialApi.list()
+      const all = pmRes.data || []
+      // BOTTLES_TINS + POUCHES_BAGS → primary (individual unit containers)
+      // CORRUGATED_BOXES → secondary (outer bulk packaging)
+      setPackingMaterials({
+        primary:   all.filter(m => ['BOTTLES_TINS', 'POUCHES_BAGS'].includes(m.category)),
+        secondary: all.filter(m => m.category === 'CORRUGATED_BOXES'),
+      })
+    } catch { /* non-critical */ }
 
     try {
       const profRes = await customerProfileApi.list();
@@ -370,12 +365,7 @@ const SalesOrder = () => {
                 SFG stock.
               </p>
             </div>
-            <button
-              onClick={() => setSfgAlert(null)}
-              className="text-green-500 hover:text-green-800 text-lg leading-none mt-0.5"
-            >
-              ×
-            </button>
+            <IconButton icon={X} tooltip="Dismiss" variant="ghost" size="xs" onClick={() => setSfgAlert(null)} className="text-green-600" />
           </div>
         </div>
       )}
@@ -431,16 +421,16 @@ const SalesOrder = () => {
 
           {/* "+ New Order" button */}
           <div className="flex items-center justify-between mb-5">
-            <button
+            <Button
+              variant="success"
+              icon={Plus}
               onClick={() => {
                 setEditing(null);
                 setShowForm(true);
               }}
-              className="text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 flex items-center gap-1.5"
-              style={{ background: BRAND }}
             >
-              + New Order
-            </button>
+              New Order
+            </Button>
           </div>
         </div>
       )}
@@ -535,36 +525,24 @@ const SalesOrder = () => {
 
                           {/* Items toggle */}
                           <td className="px-4 py-3">
-                            <button
+                            <Button
+                              variant={expanded ? "outline" : "outline-gray"}
+                              size="xs"
                               onClick={() => toggleDispatch(order.id)}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "5px",
-                                padding: "4px 10px",
-                                background: expanded ? "#f0fdf4" : "#f8fafc",
-                                color: expanded ? "#15803d" : "#64748b",
-                                border: `1px solid ${expanded ? "#bbf7d0" : "#e2e8f0"}`,
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                cursor: "pointer",
-                                whiteSpace: "nowrap",
-                              }}
                             >
                               {expanded ? "▲" : "▼"} {order.items.length} item
                               {order.items.length !== 1 ? "s" : ""}
-                            </button>
+                            </Button>
                           </td>
 
                           <td className="px-4 py-3 text-center">
-                            <button
+                            <Button
+                              variant="success"
+                              size="xs"
                               onClick={() => setDispatchOrder(order)}
-                              className="text-xs text-white px-3 py-1.5 rounded-lg font-semibold"
-                              style={{ background: BRAND }}
                             >
                               Dispatch
-                            </button>
+                            </Button>
                           </td>
                         </tr>
 
@@ -732,6 +710,7 @@ const SalesOrder = () => {
           editing={editing}
           products={products}
           profiles={profiles}
+          packingMaterials={packingMaterials}
           onSave={handleSave}
           onClose={() => {
             setShowForm(false);

@@ -1,6 +1,5 @@
-import { api, erpApi } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
-// ── Legacy unauthenticated inventory APIs ─────────────────────────────────────
 
 export const rmApi = {
   list:       (params)     => api.get('/rm', { params }),
@@ -13,6 +12,7 @@ export const rmApi = {
 
 export const packsApi = {
   generate:       (data)            => api.post('/packs/generate', data),
+  plantReturn:    (data)            => api.post('/packs/plant-return', data),
   list:           (params)          => api.get('/packs', { params }),
   get:            (packId)          => api.get(`/packs/${encodeURIComponent(packId)}`),
   nextLot:        (itemCode)        => api.get(`/packs/next-lot/${itemCode}`),
@@ -104,36 +104,39 @@ export const bulkApi = {
   stockSummary:     ()           => api.get('/bulk/summary'),
 }
 
-// ── ERP gate & inventory (authenticated) ─────────────────────────────────────
 
 export const gateApi = {
+
   // Inward
-  createInward:         (data)     => erpApi.post('/erp/gate/inward', data),
-  inwardList:           (params)   => erpApi.get('/erp/gate/inward', { params }),
-  inwardDetail:         (id)       => erpApi.get(`/erp/gate/inward/${id}`),
-  updateInward:         (id, data) => erpApi.patch(`/erp/gate/inward/${id}/status`, data),
-  requestDeleteInward:  (id)       => erpApi.patch(`/erp/gate/inward/${id}/request-delete`),
-  deleteInward:         (id)       => erpApi.delete(`/erp/gate/inward/${id}`),
+  createInward:         (data)     => api.post('/gate/inward', data),
+  inwardList:           (params)   => api.get('/gate/inward', { params }),
+  inwardDetail:         (id)       => api.get(`/gate/inward/${id}`),
+  updateInward:         (id, data) => api.patch(`/gate/inward/${id}/status`, data),
+  requestDeleteInward:  (id)       => api.patch(`/gate/inward/${id}/request-delete`),
+  deleteInward:         (id)       => api.delete(`/gate/inward/${id}`),
+  
+  
   // Outward
-  createOutward:        (data)     => erpApi.post('/erp/gate/outward', data),
-  outwardList:          (params)   => erpApi.get('/erp/gate/outward', { params }),
-  outwardDetail:        (id)       => erpApi.get(`/erp/gate/outward/${id}`),
-  updateOutward:        (id, data) => erpApi.patch(`/erp/gate/outward/${id}/status`, data),
-  requestDeleteOutward: (id)       => erpApi.patch(`/erp/gate/outward/${id}/request-delete`),
-  deleteOutward:        (id)       => erpApi.delete(`/erp/gate/outward/${id}`),
+  createOutward:        (data)     => api.post('/gate/outward', data),
+  outwardList:          (params)   => api.get('/gate/outward', { params }),
+  outwardDetail:        (id)       => api.get(`/gate/outward/${id}`),
+  updateOutward:        (id, data) => api.patch(`/gate/outward/${id}/status`, data),
+  requestDeleteOutward: (id)       => api.patch(`/gate/outward/${id}/request-delete`),
+  deleteOutward: (id) => api.delete(`/gate/outward/${id}`),
+  
 }
 
 export const inventoryApi = {
-  createAdj:       (data)       => erpApi.post('/erp/inventory/adjustments', data),
-  approveAdj:      (id, data)   => erpApi.patch(`/erp/inventory/adjustments/${id}/approve`, data),
-  rejectAdj:       (id, data)   => erpApi.patch(`/erp/inventory/adjustments/${id}/reject`, data),
-  listAdj:         (params)     => erpApi.get('/erp/inventory/adjustments', { params }),
-  createTransfer:  (data)       => erpApi.post('/erp/inventory/transfers', data),
-  receiveTransfer: (id, data)   => erpApi.patch(`/erp/inventory/transfers/${id}/receive`, data),
-  listTransfers:   (params)     => erpApi.get('/erp/inventory/transfers', { params }),
-  decant:          (data)       => erpApi.post('/erp/inventory/decanting', data),
-  listDecanting:   (params)     => erpApi.get('/erp/inventory/decanting', { params }),
-  fifoCheck:       (data)       => erpApi.post('/erp/inventory/fifo-check', data),
-  fifoOverride:    (data)       => erpApi.post('/erp/inventory/fifo-override', data),
-  stockSummary:    ()           => erpApi.get('/erp/inventory/stock-summary'),
+  createAdj:       (data)       => api.post('/inventory/adjustments', data),
+  approveAdj:      (id, data)   => api.patch(`/inventory/adjustments/${id}/approve`, data),
+  rejectAdj:       (id, data)   => api.patch(`/inventory/adjustments/${id}/reject`, data),
+  listAdj:         (params)     => api.get('/inventory/adjustments', { params }),
+  createTransfer:  (data)       => api.post('/inventory/transfers', data),
+  receiveTransfer: (id, data)   => api.patch(`/inventory/transfers/${id}/receive`, data),
+  listTransfers:   (params)     => api.get('/inventory/transfers', { params }),
+  decant:          (data)       => api.post('/inventory/decanting', data),
+  listDecanting:   (params)     => api.get('/inventory/decanting', { params }),
+  fifoCheck:       (data)       => api.post('/inventory/fifo-check', data),
+  fifoOverride:    (data)       => api.post('/inventory/fifo-override', data),
+  stockSummary:    ()           => api.get('/inventory/stock-summary'),
 }

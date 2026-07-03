@@ -1,0 +1,9 @@
+/* TaskCard */
+
+.tc-root {
+  /* borderLeft is dynamic per plant color — applied inline */
+}
+
+.tc-bmr-btn {
+  background: #7c3aed;
+}

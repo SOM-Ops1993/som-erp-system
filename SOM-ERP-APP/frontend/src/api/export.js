@@ -1,20 +1,20 @@
-import { erpApi as api } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
 export const exportApi = {
-  salesOrders:        (params) => `${api.defaults.baseURL}/erp/export/sales-orders?${new URLSearchParams(params)}`,
-  atRiskOrders:       ()       => `${api.defaults.baseURL}/erp/export/at-risk-orders`,
-  dispatchSummary:    (params) => `${api.defaults.baseURL}/erp/export/dispatch-summary?${new URLSearchParams(params)}`,
-  salesPerformance:   ()       => `${api.defaults.baseURL}/erp/export/sales-performance`,
-  microbialStock:     ()       => `${api.defaults.baseURL}/erp/export/microbial-stock`,
-  cfuDecay:           ()       => `${api.defaults.baseURL}/erp/export/cfu-decay`,
-  microbialTx:        ()       => `${api.defaults.baseURL}/erp/export/microbial-transactions`,
-  demandStockGap:     ()       => `${api.defaults.baseURL}/erp/export/demand-stock-gap`,
-  productionSchedule: ()       => `${api.defaults.baseURL}/erp/export/production-schedule`,
-  timeMotion:         ()       => `${api.defaults.baseURL}/erp/export/time-motion`,
-  equipUtilisation:   ()       => `${api.defaults.baseURL}/erp/export/equipment-utilisation`,
-  rmForecast:         ()       => `${api.defaults.baseURL}/erp/export/rm-forecast`,
-  managementPack:     ()       => `${api.defaults.baseURL}/erp/export/management-pack`,
-  gateInwardLog:      ()       => `${api.defaults.baseURL}/erp/export/gate-inward-log`,
+  salesOrders:        (params) => `${api.defaults.baseURL}/export/sales-orders?${new URLSearchParams(params)}`,
+  atRiskOrders:       ()       => `${api.defaults.baseURL}/export/at-risk-orders`,
+  dispatchSummary:    (params) => `${api.defaults.baseURL}/export/dispatch-summary?${new URLSearchParams(params)}`,
+  salesPerformance:   ()       => `${api.defaults.baseURL}/export/sales-performance`,
+  microbialStock:     ()       => `${api.defaults.baseURL}/export/microbial-stock`,
+  cfuDecay:           ()       => `${api.defaults.baseURL}/export/cfu-decay`,
+  microbialTx:        ()       => `${api.defaults.baseURL}/export/microbial-transactions`,
+  demandStockGap:     ()       => `${api.defaults.baseURL}/export/demand-stock-gap`,
+  productionSchedule: ()       => `${api.defaults.baseURL}/export/production-schedule`,
+  timeMotion:         ()       => `${api.defaults.baseURL}/export/time-motion`,
+  equipUtilisation:   ()       => `${api.defaults.baseURL}/export/equipment-utilisation`,
+  rmForecast:         ()       => `${api.defaults.baseURL}/export/rm-forecast`,
+  managementPack:     ()       => `${api.defaults.baseURL}/export/management-pack`,
+  gateInwardLog:      ()       => `${api.defaults.baseURL}/export/gate-inward-log`,
 }
 
 export function exportUrl(path) {

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { productionApi, indentApi } from '../../../../api/production.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
 import { sfgApi } from '../../../../api/inventory.js'
+import { Button, BackButton, IconButton } from '../../../../components/ui'
+import { Plus, X, Save } from 'lucide-react'
+import './Production.css'
 
 const STAGES = [
   { key: 'BIOMASS',     label: 'Biomass Input',       icon: '🧫', color: '#16a34a' },
@@ -40,10 +42,9 @@ function Input({ value, onChange, type = 'text', placeholder, readOnly, classNam
 
 function SaveBtn({ saving, onClick, label = 'Save & Continue' }) {
   return (
-    <button onClick={onClick} disabled={saving}
-      className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition flex items-center gap-2">
-      {saving ? <><span className="animate-spin">↻</span> Saving…</> : <>{label}</>}
-    </button>
+    <Button variant="primary" icon={Save} loading={saving} onClick={onClick}>
+      {label}
+    </Button>
   )
 }
 
@@ -82,13 +83,12 @@ export default function Production() {
 
   if (activeBatch) {
     return (
-      <div className="flex h-full" style={{ minHeight: 0 }}>
+      <div className="prod-batch-root flex h-full">
         <div className="w-52 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
           <div className="px-4 py-3 border-b bg-gray-50">
-            <button onClick={() => { setActiveBatch(null); loadBatches() }}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+            <Button variant="ghost" size="xs" onClick={() => { setActiveBatch(null); loadBatches() }}>
               ← All Batches
-            </button>
+            </Button>
             <p className="font-bold text-gray-900 text-sm mt-2 truncate">{activeBatch.productName}</p>
             <p className="font-mono text-xs text-gray-400 mt-0.5">{activeBatch.batchCode}</p>
             <span className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLOR[activeBatch.status]}`}>
@@ -104,7 +104,7 @@ export default function Production() {
               return (
                 <button key={s.key} onClick={() => setActiveStageKey(s.key)}
                   className={`w-full text-left px-4 py-2.5 flex items-center gap-2.5 text-sm transition border-l-4 ${isActive ? 'bg-indigo-50 border-indigo-500' : 'border-transparent hover:bg-gray-50'}`}>
-                  <span className="text-base leading-none" style={{ minWidth: 20 }}>{done ? '✓' : s.icon}</span>
+                  <span className="prod-stage-icon text-base leading-none">{done ? '✓' : s.icon}</span>
                   <span className={`flex-1 text-xs font-medium ${done ? 'text-emerald-600' : current ? 'text-indigo-700 font-semibold' : 'text-gray-500'}`}>
                     {s.label}
                   </span>
@@ -142,10 +142,9 @@ export default function Production() {
           <p className="text-sm text-gray-500 mt-1">Powder Formulations — end-to-end batch execution & traceability</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => { setShowNewForm(true); indentApi.list({ limit: 200 }).then(r => setIndents(r.data || [])) }}
-            className="bg-indigo-600 text-white px-4 py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 transition">
-            + Start New Batch
-          </button>
+          <Button variant="primary" icon={Plus} onClick={() => { setShowNewForm(true); indentApi.list({ limit: 200 }).then(r => setIndents(r.data || [])) }}>
+            Start New Batch
+          </Button>
           <BackButton />
         </div>
       </div>
@@ -221,7 +220,7 @@ function NewBatchModal({ indents, onClose, onCreate }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
         <div className="px-6 py-4 border-b flex items-center justify-between">
           <h2 className="font-bold text-gray-900">Start New Production Batch</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+          <IconButton icon={X} tooltip="Close" onClick={onClose} />
         </div>
         <div className="px-6 py-5 space-y-4">
           <Field label="Select Indent *">
@@ -248,16 +247,16 @@ function NewBatchModal({ indents, onClose, onCreate }) {
           </div>
         </div>
         <div className="px-6 pb-5 flex gap-3">
-          <button onClick={async () => {
-            if (!indentId) { alert('Select an indent first'); return }
-            setCreating(true)
-            await onCreate({ indentId, category: 'POWDER', temperature: temp || undefined, humidity: humidity || undefined, cfuTarget: cfuTarget || undefined })
-            setCreating(false)
-          }} disabled={!indentId || creating}
-            className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-indigo-700 disabled:opacity-50 transition">
-            {creating ? 'Creating…' : '🏭 Create Production Batch'}
-          </button>
-          <button onClick={onClose} className="border border-gray-300 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+          <Button variant="primary" fullWidth loading={creating} disabled={!indentId || creating}
+            onClick={async () => {
+              if (!indentId) { alert('Select an indent first'); return }
+              setCreating(true)
+              await onCreate({ indentId, category: 'POWDER', temperature: temp || undefined, humidity: humidity || undefined, cfuTarget: cfuTarget || undefined })
+              setCreating(false)
+            }}>
+            {creating ? 'Creating…' : 'Create Production Batch'}
+          </Button>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
         </div>
       </div>
     </div>
@@ -296,7 +295,7 @@ function Stage1Biomass({ batch, onSaved }) {
           <div key={i} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-indigo-700 uppercase">Culture Entry #{i + 1}</p>
-              {rows.length > 1 && <button onClick={() => removeRow(i)} className="text-red-400 hover:text-red-600 text-xs font-medium">✕ Remove</button>}
+              {rows.length > 1 && <Button variant="danger" size="xs" icon={X} onClick={() => removeRow(i)}>Remove</Button>}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <Field label="Culture Name *"><Input value={row.cultureName} onChange={e => update(i,'cultureName',e.target.value)} placeholder="e.g. Bacillus subtilis" /></Field>
@@ -324,9 +323,9 @@ function Stage1Biomass({ batch, onSaved }) {
             </div>
           </div>
         ))}
-        <button onClick={addRow} className="border-2 border-dashed border-indigo-300 text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 transition w-full">
-          + Add Another Culture Entry
-        </button>
+        <Button variant="outline" icon={Plus} fullWidth onClick={addRow}>
+          Add Another Culture Entry
+        </Button>
       </div>
       <div className="mt-5 flex gap-3"><SaveBtn saving={saving} onClick={save} /></div>
     </StageCard>
@@ -426,7 +425,7 @@ function Stage3Formulation({ batch, onSaved }) {
     <StageCard title="🔄 Stage 3 — Formulation Cycles" flag={batch.formulationFlag} desc={`Batch-wise formulation execution. For ${batch.orderQty} kg order — estimated ~${totalCycles} cycle(s).`}>
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-gray-600">{cycles.length} cycle{cycles.length !== 1 ? 's' : ''} recorded</p>
-        <button onClick={() => { setEditCycle(emptyC()); setShowForm(true) }} className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 transition">+ Add Cycle</button>
+        <Button variant="primary" size="sm" icon={Plus} onClick={() => { setEditCycle(emptyC()); setShowForm(true) }}>Add Cycle</Button>
       </div>
       {cycles.length === 0 ? (
         <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center text-gray-400 text-sm">No formulation cycles yet — click "Add Cycle" to begin</div>
@@ -449,8 +448,8 @@ function Stage3Formulation({ batch, onSaved }) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setEditCycle({ ...c }); setShowForm(true) }} className="text-indigo-500 hover:text-indigo-700 text-xs font-medium border border-indigo-200 px-2.5 py-1 rounded-lg">Edit</button>
-                <button onClick={() => deleteCycle(c.id)} className="text-red-400 hover:text-red-600 text-xs font-medium border border-red-200 px-2.5 py-1 rounded-lg">✕</button>
+                <Button variant="outline" size="xs" onClick={() => { setEditCycle({ ...c }); setShowForm(true) }}>Edit</Button>
+                <Button variant="danger" size="xs" icon={X} onClick={() => deleteCycle(c.id)}>Del</Button>
               </div>
             </div>
           ))}
@@ -461,7 +460,7 @@ function Stage3Formulation({ batch, onSaved }) {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white">
               <h3 className="font-bold">{editCycle.id ? 'Edit' : 'Add'} Formulation Cycle</h3>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 text-xl">×</button>
+              <IconButton icon={X} tooltip="Close" onClick={() => setShowForm(false)} />
             </div>
             <div className="px-6 py-4 space-y-4">
               <div className="grid grid-cols-3 gap-3">
@@ -497,7 +496,7 @@ function Stage3Formulation({ batch, onSaved }) {
             </div>
             <div className="px-6 pb-5 flex gap-3">
               <SaveBtn saving={saving} onClick={save} label={editCycle.id ? 'Update Cycle' : 'Save Cycle'} />
-              <button onClick={() => setShowForm(false)} className="border border-gray-300 px-4 py-2.5 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <Button variant="secondary" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>
           </div>
         </div>

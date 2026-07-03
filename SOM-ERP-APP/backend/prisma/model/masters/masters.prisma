@@ -220,6 +220,7 @@ model PackingMaterial {
   laminate     String?  @db.VarChar(100)
   contentsSpec String?  @map("contents_spec") @db.VarChar(200)
   packCount    Int?     @map("pack_count")
+  quantity     Int?     @default(0)
   uom          String   @default("Nos") @db.VarChar(20)
   notes        String?  @db.VarChar(500)
   isActive     Boolean  @default(true) @map("is_active")

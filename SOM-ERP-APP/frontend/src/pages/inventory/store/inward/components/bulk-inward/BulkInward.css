@@ -1,0 +1,8 @@
+.bi-camera-container {
+  max-width: 400px;
+}
+
+.bi-scan-overlay {
+  width: 180px;
+  height: 180px;
+}

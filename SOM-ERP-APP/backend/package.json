@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "type": "module",
   "prisma": {
-    "schema": "./prisma/model"
+    "schema": "./prisma/model",
+    "seed": "node prisma/seed.js"
   },
   "scripts": {
     "dev": "node --watch src/server.js",

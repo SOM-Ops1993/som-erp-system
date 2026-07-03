@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { Upload, Plus } from 'lucide-react'
 import { microbialSfgApi } from '../../../../api/microbial.js'
-import MicrobeList   from '../components/MicrobeList.jsx'
-import MicrobeForm   from '../components/MicrobeForm.jsx'
-import MicrobeImport from '../components/MicrobeImport.jsx'
+import { Button, BackButton } from '../../../../components/ui'
+import MicrobeList   from '../components/microbe-list/MicrobeList.jsx'
+import MicrobeForm   from '../components/microbe-form/MicrobeForm.jsx'
+import MicrobeImport from '../components/microbe-import/MicrobeImport.jsx'
 
 const S = {
   page:       { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif", maxWidth: '960px' },
   head:       { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
   h1:         { fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 },
   sub:        { fontSize: '13px', color: '#64748b', marginTop: '4px' },
-  btnPrimary: { padding: '9px 20px', background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '7px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' },
-  btnOutline: { padding: '8px 16px', background: '#fff', color: '#1e3a5f', border: '1.5px solid #1e3a5f', borderRadius: '7px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' },
 }
 
 export default function MicrobesMaster() {
@@ -75,14 +75,11 @@ export default function MicrobesMaster() {
           <p style={S.sub}>Manage microbe names and codes used across the SFG module</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button style={S.btnOutline} onClick={() => setTab('import')}>⇪ Import Excel</button>
-          <button style={S.btnPrimary} onClick={() => { setForm({ microbe_name: '', microbe_code: '' }); setEditId(null); setTab('add') }}>
-            + Add Microbe
-          </button>
-          <button
-            onClick={() => window.history.back()}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', fontSize: '13px', fontWeight: 500, color: '#475569', cursor: 'pointer' }}
-          >← Back</button>
+          <Button variant="outline" icon={Upload} onClick={() => setTab('import')}>Import Excel</Button>
+          <Button variant="primary" icon={Plus} onClick={() => { setForm({ microbe_name: '', microbe_code: '' }); setEditId(null); setTab('add') }}>
+            Add Microbe
+          </Button>
+          <BackButton />
         </div>
       </div>
 

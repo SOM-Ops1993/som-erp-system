@@ -1,0 +1,16 @@
+/* CreateSalesOrder */
+
+.cso-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cso-col {
+  min-width: 0;
+}
+
+.cso-col-full {
+  min-width: 0;
+  grid-column: 1 / -1;
+}

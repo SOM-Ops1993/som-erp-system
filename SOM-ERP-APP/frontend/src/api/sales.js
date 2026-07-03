@@ -1,6 +1,5 @@
-import { api, erpApi } from '../context/context.jsx'
+import { api } from '../context/context.jsx'
 
-// ── Sales orders (unauthenticated) ────────────────────────────────────────────
 
 export const salesOrderApi = {
   list:         (params)     => api.get('/sales-orders', { params }),
@@ -50,17 +49,16 @@ export const trackerApi = {
   getDetail:  (indentId) => api.get('/tracker/detail', { params: { indentId } }),
 }
 
-// ── ERP-level sales API (authenticated) ──────────────────────────────────────
 
 export const salesApi = {
-  list:         (params)     => erpApi.get('/erp/sales/orders', { params }),
-  get:          (di)         => erpApi.get(`/erp/sales/orders/${encodeURIComponent(di)}`),
-  create:       (data)       => erpApi.post('/erp/sales/orders', data),
-  update:       (di, data)   => erpApi.patch(`/erp/sales/orders/${encodeURIComponent(di)}`, data),
-  cancel:       (di)         => erpApi.patch(`/erp/sales/orders/${encodeURIComponent(di)}/cancel`),
-  dispatch:     (di, data)   => erpApi.post(`/erp/sales/orders/${encodeURIComponent(di)}/dispatch`, data),
-  dispatchList: (params)     => erpApi.get('/erp/sales/dispatch', { params }),
-  atRisk:       ()           => erpApi.get('/erp/sales/orders/at-risk'),
-  syncExcel:    ()           => erpApi.post('/erp/sales/sync'),
-  plannerQueue: (params)     => erpApi.get('/erp/sales/planner-queue', { params }),
+  list:         (params)     => api.get('/sales/orders', { params }),
+  get:          (di)         => api.get(`/sales/orders/${encodeURIComponent(di)}`),
+  create:       (data)       => api.post('/sales/orders', data),
+  update:       (di, data)   => api.patch(`/sales/orders/${encodeURIComponent(di)}`, data),
+  cancel:       (di)         => api.patch(`/sales/orders/${encodeURIComponent(di)}/cancel`),
+  dispatch:     (di, data)   => api.post(`/sales/orders/${encodeURIComponent(di)}/dispatch`, data),
+  dispatchList: (params)     => api.get('/sales/dispatch', { params }),
+  atRisk:       ()           => api.get('/sales/orders/at-risk'),
+  syncExcel:    ()           => api.post('/sales/sync'),
+  plannerQueue: (params)     => api.get('/sales/planner-queue', { params }),
 }

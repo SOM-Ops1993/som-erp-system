@@ -82,11 +82,11 @@ async function drawLabel(doc, pack) {
   doc.text(pack.lotNo, M, curY, { width: leftW })
 
   // ── FOOTER STRIP ───────────────────────────────────────────────────────
-  const footerH = 7 * MM   // 19.8 pt
-  const footerY = H - footerH
-  doc.rect(0, footerY, W, footerH).fill('#d6e4f0')
-  doc.fillColor('#1a3a6b').fontSize(8).font('Helvetica-Bold')
-  doc.text(`LOT: ${pack.lotNo}`, M, footerY + 1.5 * MM, { width: W - 2 * M, align: 'left' })
+  // const footerH = 7 * MM   // 19.8 pt
+  // const footerY = H - footerH
+  // doc.rect(0, footerY, W, footerH).fill('#d6e4f0')
+  // doc.fillColor('#1a3a6b').fontSize(8).font('Helvetica-Bold')
+  // doc.text(`LOT: ${pack.lotNo}`, M, footerY + 1.5 * MM, { width: W - 2 * M, align: 'left' })
 }
 
 export async function generateLabelBuffer(pack) {

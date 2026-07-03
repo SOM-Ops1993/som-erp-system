@@ -1,0 +1,12 @@
+/* Fixed aspect ratio + object-fit: cover on the video below keeps the feed
+   filling the box regardless of the stream's native resolution — without it,
+   a stream narrower than the container leaves a black gap under the video. */
+.pi-camera-container {
+  aspect-ratio: 1 / 1;
+}
+
+.pi-camera-container video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

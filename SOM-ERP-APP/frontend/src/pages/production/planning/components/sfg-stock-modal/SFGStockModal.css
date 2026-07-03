@@ -1,0 +1,12 @@
+/* SFGStockModal */
+
+.ssm-header {
+  background: linear-gradient(135deg, #0f6e56, #0a4f3e);
+}
+
+.ssm-icon-btn {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ssm-qty--positive { color: #16a34a; }
+.ssm-qty--zero     { color: #94a3b8; }

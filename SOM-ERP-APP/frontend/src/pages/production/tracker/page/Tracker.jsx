@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { trackerApi } from '../../../../api/sales.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import InfoChip from '../components/InfoChip.jsx'
-import Stat from '../components/Stat.jsx'
+import { BackButton } from '../../../../components/ui'
+import InfoChip from '../components/info-chip/InfoChip.jsx'
+import Stat from '../components/stat/Stat.jsx'
+import './Tracker.css'
 
 export default function Tracker() {
   const [diNo, setDiNo] = useState('')
@@ -52,8 +53,8 @@ export default function Tracker() {
   }
 
   return (
-    <div className="flex h-full" style={{ minHeight: 0 }}>
-      <div className="w-80 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col" style={{ overflowY: 'auto' }}>
+    <div className="trk-root flex h-full">
+      <div className="trk-sidebar w-80 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
         <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">🔍 Batch Tracker</h2>

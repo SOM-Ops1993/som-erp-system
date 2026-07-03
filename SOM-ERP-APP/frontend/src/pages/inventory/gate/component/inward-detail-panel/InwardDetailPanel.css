@@ -1,0 +1,68 @@
+/* InwardDetailPanel */
+
+.idp-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1.5px solid #6366f1;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+}
+
+.idp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.idp-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.idp-sub {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.idp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.idp-field-label {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.idp-field-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* StatusBadge */
+.idp-badge {
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.idp-badge--pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.idp-badge--approved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.idp-badge--rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }

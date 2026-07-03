@@ -1,9 +1,11 @@
+﻿import './RmMaterial.css'
 import { useState, useEffect, useMemo } from 'react'
 import { stockApi } from '../../../api/inventory.js'
-import BackButton    from '../../../components/erp/BackButton.jsx'
-import RmStatsBar    from './components/RmStatsBar.jsx'
-import RmFilterBar   from './components/RmFilterBar.jsx'
-import RmTable       from './components/RmTable.jsx'
+import { BackButton, IconButton } from '../../../components/ui'
+import { RefreshCw } from 'lucide-react'
+import RmStatsBar    from './components/rm-stats-bar/RmStatsBar.jsx'
+import RmFilterBar   from './components/rm-filter-bar/RmFilterBar.jsx'
+import RmTable       from './components/rm-table/RmTable.jsx'
 
 export default function RmMaterial() {
   const [items,       setItems]       = useState([])
@@ -53,9 +55,7 @@ export default function RmMaterial() {
             <p className="text-xs text-gray-400 mt-0.5">Stock overview · {items.length} items registered</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={load}
-              className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 bg-white shadow-sm hover:bg-gray-50 text-gray-400 hover:text-gray-900 transition text-lg"
-              title="Refresh">↻</button>
+            <IconButton icon={RefreshCw} tooltip="Refresh" onClick={load} />
             <BackButton />
           </div>
         </div>

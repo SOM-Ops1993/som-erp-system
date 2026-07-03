@@ -140,10 +140,9 @@ export async function sendSMS({ to, message, notifId }) {
 
 async function logDelivery(notifId, channel, status, externalId) {
   try {
-    await prisma.$executeRaw`
-      INSERT INTO notification_delivery_log (notif_id, channel, status, external_id)
-      VALUES (${notifId}::uuid, ${channel}, ${status}, ${externalId?.toString() || null})
-    `
+    await prisma.notificationDeliveryLog.create({
+      data: { notifId, channel, status, externalId: externalId?.toString() || null },
+    })
   } catch (e) { /* non-critical */ }
 }
 

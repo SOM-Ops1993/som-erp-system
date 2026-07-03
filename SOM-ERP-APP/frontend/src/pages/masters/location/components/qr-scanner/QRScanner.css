@@ -1,0 +1,9 @@
+.qs-wrapper {
+  max-width: 480px;
+}
+
+.qs-viewfinder {
+  width: 200px;
+  height: 200px;
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.4);
+}

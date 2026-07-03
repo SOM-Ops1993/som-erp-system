@@ -35,8 +35,7 @@ const createBomSend = async (req, res) => {
     if (!planId || !productName || !diNo || !bomType || !totalQty)
       return res.status(400).json({
         success: false,
-        error: "planId, productName, diNo, bomType, totalQty are required",
-      });
+        error: "planId, productName, diNo, bomType, totalQty are required", code: 'VALIDATION_ERROR' });
 
     const sendId = await nextSendId();
     const send = await prisma.bomSend.create({
@@ -59,7 +58,7 @@ const createBomSend = async (req, res) => {
     });
     return res.json({ success: true, data: send });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -70,7 +69,7 @@ const issuePackToBomSend = async (req, res) => {
       where: { id: req.params.id },
     });
     if (!send)
-      return res.status(404).json({ success: false, error: "BOM not found" });
+      return res.status(404).json({ success: false, error: "BOM not found", code: 'NOT_FOUND' });
     if (["ISSUED", "CANCELLED"].includes(send.status))
       return res
         .status(400)
@@ -117,8 +116,7 @@ const issuePackToBomSend = async (req, res) => {
     if (remainingNeeded <= 0)
       return res.status(400).json({
         success: false,
-        error: "This material is already fully issued",
-      });
+        error: "This material is already fully issued", code: 'VALIDATION_ERROR' });
 
     const requested = qty ? parseFloat(qty) : null;
     const deduct = parseFloat(
@@ -196,7 +194,7 @@ const issuePackToBomSend = async (req, res) => {
       bomFullyDone: allDone,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

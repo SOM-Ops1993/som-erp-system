@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authorize } from "../../../middleware/auth.js";
 
 import {
   createSalesOrder,
@@ -28,6 +29,10 @@ import {
 // ____________------ Router -----------------------
 
 const router = Router();
+
+// Sales Orders are management's call — not something the inventory/store
+// team should see or edit, so the whole router (reads included) is admin-only.
+router.use(authorize(["admin"]));
 
 // Static paths must come before /:id
 

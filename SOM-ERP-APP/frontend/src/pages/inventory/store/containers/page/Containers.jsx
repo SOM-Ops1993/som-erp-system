@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import BackButton from '../../../../../components/erp/BackButton.jsx'
-import ContainerList from '../components/ContainerList.jsx'
-import CreateContainer from '../components/CreateContainer.jsx'
+﻿import { useState } from 'react'
+import './Containers.css'
+import { BackButton } from '../../../../../components/ui'
+import ContainerList from '../components/container-list/ContainerList.jsx'
+import CreateContainer from '../components/create-container/CreateContainer.jsx'
 
 const TABS = ['All Containers', 'Create Container']
 

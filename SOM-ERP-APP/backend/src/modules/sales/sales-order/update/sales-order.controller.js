@@ -42,7 +42,7 @@ const updateSalesOrder = async (req, res) => {
     });
     return res.json({ success: true, data: order });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -94,7 +94,7 @@ const updateSalesOrderItem = async (req, res) => {
     });
     return res.json({ success: true, data: item });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -107,7 +107,7 @@ const cancelOrder = async (req, res) => {
       where: { id: req.params.id },
     });
     if (!order)
-      return res.status(404).json({ success: false, error: "Order not found" });
+      return res.status(404).json({ success: false, error: "Order not found", code: 'NOT_FOUND' });
 
     await prisma.salesOrderItem.updateMany({
       where:  { salesOrderId: req.params.id },
@@ -116,7 +116,7 @@ const cancelOrder = async (req, res) => {
 
     return res.json({ success: true, message: "Order items marked as cancelled" });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 
@@ -148,7 +148,7 @@ const dispatchOrder = async (req, res) => {
     });
     return res.json({ success: true, data: order });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

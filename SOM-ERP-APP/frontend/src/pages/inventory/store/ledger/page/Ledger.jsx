@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { ledgerApi, rmApi } from '../../../../../api/inventory.js'
-import BackButton              from '../../../../../components/erp/BackButton.jsx'
-import LedgerTable             from '../components/LedgerTable.jsx'
-import TransactionDetailModal  from '../components/TransactionDetailModal.jsx'
+import { BackButton, Button } from '../../../../../components/ui'
+import LedgerTable             from '../components/ledger-table/LedgerTable.jsx'
+import TransactionDetailModal  from '../components/transaction-detail-modal/TransactionDetailModal.jsx'
+import { RefreshCw, X } from 'lucide-react'
+import './Ledger.css'
 
 export default function Ledger() {
   const [rows,       setRows]       = useState([])
@@ -51,9 +53,7 @@ export default function Ledger() {
           <p className="text-sm text-gray-500 mt-0.5">Full transaction history — click any row for complete detail</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={loadLedger} className="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm">
-            ↻ Refresh
-          </button>
+          <Button onClick={loadLedger} variant="outline-gray" size="sm" icon={RefreshCw}>Refresh</Button>
           <BackButton />
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function Ledger() {
           {rmList.map(r => <option key={r.itemCode} value={r.itemCode}>{r.itemName} ({r.itemCode})</option>)}
         </select>
         {filterItem && (
-          <button onClick={() => { setFilterItem(''); setPage(1) }} className="text-xs text-gray-400 hover:text-gray-600">✕ Clear</button>
+          <Button onClick={() => { setFilterItem(''); setPage(1) }} variant="ghost" size="xs" icon={X}>Clear</Button>
         )}
         <span className="text-xs text-gray-400 ml-auto">{total} total entries · Page {page} of {totalPages || 1}</span>
       </div>

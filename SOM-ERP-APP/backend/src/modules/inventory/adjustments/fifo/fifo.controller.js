@@ -1,10 +1,10 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 
-export async function checkFifo(req, res) {
+export const checkFifo = async (req, res) => {
   const { item_code, selected_pack_id } = req.body || {}
   if (!item_code || !selected_pack_id)
-    return res.status(400).json({ success: false, error: 'item_code and selected_pack_id required' })
+    return res.status(400).json({ success: false, error: 'item_code and selected_pack_id required', code: 'VALIDATION_ERROR' })
 
   try {
     const oldest = await prisma.erpPack.findFirst({
@@ -31,13 +31,13 @@ export async function checkFifo(req, res) {
       oldest_pack_id: oldest.packId,
     })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
-}
+};
 
-export async function createFifoOverride(req, res) {
+export const createFifoOverride = async (req, res) => {
   const { job_id, item_code, older_lot, older_qty, selected_lot, reason } = req.body || {}
-  if (!reason) return res.status(400).json({ success: false, error: 'reason is mandatory for FIFO override' })
+  if (!reason) return res.status(400).json({ success: false, error: 'reason is mandatory for FIFO override', code: 'VALIDATION_ERROR' })
 
   try {
     const row = await prisma.fifoOverrideLog.create({
@@ -60,6 +60,6 @@ export async function createFifoOverride(req, res) {
     })
     return res.status(201).json({ success: true, data: row, message: 'FIFO override logged. You may proceed with selected lot.' })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
-}
+};

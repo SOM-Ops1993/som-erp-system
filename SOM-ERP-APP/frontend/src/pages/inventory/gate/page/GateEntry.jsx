@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowDown, ArrowUp, CheckCircle } from "lucide-react";
 import { gateApi } from "../../../../api/inventory.js";
-import { useAuth } from "../../../../components/erp/AuthContext.jsx";
-import BackButton from "../../../../components/erp/BackButton.jsx";
-import GateTabs from "../component/GateTabs.jsx";
-import GateFilterBar from "../component/GateFilterBar.jsx";
-import InwardForm from "../component/InwardForm.jsx";
-import OutwardForm from "../component/OutwardForm.jsx";
-import InwardDetailPanel from "../component/InwardDetailPanel.jsx";
-import InwardTable from "../component/InwardTable.jsx";
-import OutwardTable from "../component/OutwardTable.jsx";
+import { useAuth } from "../../../../components/auth/AuthContext.jsx";
+import { Button, BackButton, ErrorModal, ConfirmModal } from '../../../../components/ui'
+import GateTabs from "../component/gate-tabs/GateTabs.jsx";
+import GateFilterBar from "../component/gate-filter-bar/GateFilterBar.jsx";
+import InwardForm from "../component/inward-form/InwardForm.jsx";
+import OutwardForm from "../component/outward-form/OutwardForm.jsx";
+import InwardDetailPanel from "../component/inward-detail-panel/InwardDetailPanel.jsx";
+import InwardTable from "../component/inward-table/InwardTable.jsx";
+import OutwardTable from "../component/outward-table/OutwardTable.jsx";
 
 const EMPTY_FILTERS = { search: "", invoice_no: "", status: "", from_date: "", to_date: "" };
 
@@ -22,28 +23,6 @@ const S = {
   loading:  { background: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontSize: "14px" },
   errBox:   { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "12px 16px", color: "#dc2626", fontSize: "13px", marginBottom: "16px" },
 };
-
-function Btn({ onClick, color = "#3b82f6", children }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ padding: "9px 18px", background: color, color: "#fff", border: "none", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function BackBtn({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{ padding: "8px 16px", background: "#fff", color: "#475569", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-    >
-      ← Back
-    </button>
-  );
-}
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function GateEntry() {
@@ -62,6 +41,9 @@ export default function GateEntry() {
   const [error, setError]     = useState(null);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [detail, setDetail]   = useState(null);
+  const [errModal, setErrModal]           = useState({ open: false, message: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [successMsg, setSuccessMsg]       = useState('');
 
   const debounceRef = useRef(null);
 
@@ -121,21 +103,30 @@ export default function GateEntry() {
     fetchList(listType, EMPTY_FILTERS);
   };
 
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
   const submitInward = async (form) => {
     try {
-      await gateApi.createInward(form);
-      openList("inward"); // show the list so user can see the new entry
+      const res = await gateApi.createInward(form);
+      const entry = res.data;
+      showSuccess(`Inward entry created${entry?.supplier_name ? ` for ${entry.supplier_name}` : ''}${entry?.invoice_no ? ` · ${entry.invoice_no}` : ''}`);
+      setFormKey(k => k + 1);
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
   const submitOutward = async (form) => {
     try {
-      await gateApi.createOutward(form);
-      openList("outward");
+      const res = await gateApi.createOutward(form);
+      const entry = res.data;
+      showSuccess(`Outward entry recorded${entry?.receiver_name ? ` for ${entry.receiver_name}` : ''}${entry?.invoice_no ? ` · ${entry.invoice_no}` : ''}`);
+      setFormKey(k => k + 1);
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
@@ -144,18 +135,21 @@ export default function GateEntry() {
       const res = await gateApi.inwardDetail(id);
       setDetail(res.data);
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
-  const handleRequestDelete = async (id, type) => {
-    if (!confirm("Send a delete request to admin?\n\nThis record will be flagged for review. Only an admin can permanently delete it.")) return;
+  const handleRequestDelete = (id, type) => setDeleteConfirm({ id, type });
+
+  const confirmDeleteRequest = async () => {
+    const { id, type } = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       if (type === "inward") await gateApi.requestDeleteInward(id);
       else                   await gateApi.requestDeleteOutward(id);
       fetchList(listType, filters);
     } catch (e) {
-      alert(e.message);
+      setErrModal({ open: true, message: e.message });
     }
   };
 
@@ -177,13 +171,20 @@ export default function GateEntry() {
             <div style={S.btnRow}>
               {canGate && (
                 <>
-                  <Btn onClick={() => openList("inward")} color="#3b82f6">⬇ Inward Entries</Btn>
-                  <Btn onClick={() => openList("outward")} color="#7c3aed">⬆ Outward Entries</Btn>
+                  <Button variant="primary" icon={ArrowDown} onClick={() => openList("inward")}>Inward Entries</Button>
+                  <Button variant="purple"  icon={ArrowUp}   onClick={() => openList("outward")}>Outward Entries</Button>
                 </>
               )}
               <BackButton />
             </div>
           </div>
+
+          {/* Success banner */}
+          {successMsg && (
+            <div style={{ marginBottom: '16px', padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', color: '#15803d', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle size={16} /> {successMsg}
+            </div>
+          )}
 
           {/* Inward / Outward tab selector */}
           <GateTabs tab={formTab} onChange={(t) => { setFormTab(t); setFormKey(k => k + 1) }} />
@@ -213,11 +214,11 @@ export default function GateEntry() {
         <>
           <div style={S.header}>
             <div>
-              <h1 style={S.title}>⬇ Inward Entries</h1>
+              <h1 style={{ ...S.title, display: 'flex', alignItems: 'center', gap: '10px' }}><ArrowDown size={22} /> Inward Entries</h1>
               <p style={S.subtitle}>{total} record{total !== 1 ? "s" : ""} found</p>
             </div>
             <div style={S.btnRow}>
-              <BackBtn onClick={goHome} />
+              <BackButton onClick={goHome} />
             </div>
           </div>
 
@@ -252,11 +253,11 @@ export default function GateEntry() {
         <>
           <div style={S.header}>
             <div>
-              <h1 style={S.title}>⬆ Outward Entries</h1>
+              <h1 style={{ ...S.title, display: 'flex', alignItems: 'center', gap: '10px' }}><ArrowUp size={22} /> Outward Entries</h1>
               <p style={S.subtitle}>{total} record{total !== 1 ? "s" : ""} found</p>
             </div>
             <div style={S.btnRow}>
-              <BackBtn onClick={goHome} />
+              <BackButton onClick={goHome} />
             </div>
           </div>
 
@@ -280,6 +281,20 @@ export default function GateEntry() {
           }
         </>
       )}
+
+      <ErrorModal
+        open={errModal.open}
+        message={errModal.message}
+        onClose={() => setErrModal({ open: false, message: '' })}
+      />
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Request Delete"
+        message="This record will be flagged for review. Only an admin can permanently delete it."
+        acceptText="Send Request"
+        onAccept={confirmDeleteRequest}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

@@ -42,6 +42,55 @@ model EquipmentMaster {
   @@map("equipment_master")
 }
 
+// ─── PRODUCTION TASK (plant scheduling) ─────────────────────────────────────
+
+model ProductionTask {
+  id            String    @id @default(cuid())
+  taskId        String    @unique @map("task_id") @db.VarChar(40)
+  plant         String    @db.VarChar(50)
+  date          String    @db.VarChar(10)    // YYYY-MM-DD
+  diNo          String?   @map("di_no")       @db.VarChar(50)
+  shift         String    @default("General") @db.VarChar(20)
+  productName   String    @map("product_name") @db.VarChar(300)
+  batchCode     String?   @map("batch_code")  @db.VarChar(100)
+  batchKey      String?   @map("batch_key")   @db.VarChar(200)
+  qty           Float     @default(0)
+  qtyUom        String?   @map("qty_uom")     @db.VarChar(20)
+  process       String    @default("")        @db.VarChar(100)
+  incharge      String    @default("")        @db.VarChar(100)
+  equipment     String?   @db.VarChar(100)
+  location      String?   @db.VarChar(100)
+  carrier       String?   @db.VarChar(100)
+  specs         String?   @db.VarChar(200)
+  status        String    @default("Not Started") @db.VarChar(50)
+  remarks       String?   @db.VarChar(500)
+  // Packing fields
+  primaryPack   String?   @map("primary_pack")      @db.VarChar(100)
+  inners        String?   @db.VarChar(100)
+  secondaryPack String?   @map("secondary_pack")    @db.VarChar(100)
+  unitPackQty   Float?    @map("unit_pack_qty")
+  noUnits       Float?    @map("no_units")
+  unitsPerSecPack Float?  @map("units_per_sec_pack")
+  totalSecPacks Float?    @map("total_sec_packs")
+  labels        String?   @db.VarChar(100)
+  packAfter     String?   @map("pack_after")         @db.VarChar(10)
+  sfgSourceId   String?   @map("sfg_source_id")      @db.VarChar(50)
+  // Workflow flags
+  sent          Boolean   @default(false)
+  timerStart    DateTime? @map("timer_start")  @db.Timestamptz()
+  timerEnd      DateTime? @map("timer_end")    @db.Timestamptz()
+  bmrSubmitted  Boolean   @default(false) @map("bmr_submitted")
+  bmrSubmittedAt DateTime? @map("bmr_submitted_at") @db.Timestamptz()
+  sentToQc      Boolean   @default(false) @map("sent_to_qc")
+  sentToQcAt    DateTime? @map("sent_to_qc_at") @db.Timestamptz()
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([plant, date])
+  @@index([date, sent])
+  @@map("production_tasks")
+}
+
 // ─── RECIPE / BOM ────────────────────────────────────────────────────────────
 
 model RecipeDb {

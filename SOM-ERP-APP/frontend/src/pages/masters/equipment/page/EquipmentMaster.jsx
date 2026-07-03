@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
 import { equipmentApi } from '../../../../api/masters.js'
-import BackButton from '../../../../components/erp/BackButton.jsx'
-import EquipmentTable from '../components/EquipmentTable.jsx'
-import EquipmentForm from '../components/EquipmentForm.jsx'
+import { Button, BackButton } from '../../../../components/ui'
+import EquipmentTable from '../components/equipment-table/EquipmentTable.jsx'
+import EquipmentForm from '../components/equipment-form/EquipmentForm.jsx'
 
 export default function EquipmentMaster() {
   const [items, setItems]   = useState([])
@@ -48,9 +49,7 @@ export default function EquipmentMaster() {
           <p className="text-sm text-gray-500 mt-1">Manage production equipment for indent selection</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={openAdd} className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 font-medium">
-            + Add Equipment
-          </button>
+          <Button variant="warning" icon={Plus} onClick={openAdd}>Add Equipment</Button>
           <BackButton />
         </div>
       </div>

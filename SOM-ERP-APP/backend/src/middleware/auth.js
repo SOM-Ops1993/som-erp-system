@@ -1,13 +1,15 @@
 /**
- * ERP Auth Middleware — JWT verify + role guard
- * Uses Node.js built-in crypto (no external JWT library needed)
+ * ERP Auth Middleware — JWT verify + operation/role guard
+ * Backed by the flat-file accounts in backend/access.js (temporary — see that
+ * file's header comment). Uses Node.js built-in crypto (no external JWT
+ * library needed).
  */
-import { createHmac, pbkdf2Sync, randomBytes } from "crypto";
+import { createHmac } from "crypto";
+import { findAccount } from "../../access.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "som-erp-super-secret-change-in-production-2026";
 const JWT_EXPIRES_SEC = 8 * 60 * 60; // 8 hours
-const PIN_JWT_EXPIRES_SEC = 30 * 60; // 30 min pin session
 
 // ─── JWT helpers ────────────────────────────────────────────────────────────
 
@@ -39,34 +41,19 @@ export function verifyJwt(token) {
   return payload;
 }
 
-// ─── Password helpers ────────────────────────────────────────────────────────
-
-export function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const hash = pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
-  return `${salt}:${hash}`;
-}
-
-export function verifyPassword(password, stored) {
-  if (!stored || !stored.includes(":")) return false;
-  const [salt, hash] = stored.split(":");
-  const attempt = pbkdf2Sync(password, salt, 100000, 64, "sha512").toString(
-    "hex",
-  );
-  return attempt === hash;
-}
-
-export function hashPin(pin) {
-  const salt = randomBytes(8).toString("hex");
-  const hash = pbkdf2Sync(pin, salt, 50000, 32, "sha256").toString("hex");
-  return `${salt}:${hash}`;
-}
-
-export function verifyPin(pin, stored) {
-  if (!stored || !stored.includes(":")) return false;
-  const [salt, hash] = stored.split(":");
-  const attempt = pbkdf2Sync(pin, salt, 50000, 32, "sha256").toString("hex");
-  return attempt === hash;
+// Shapes a matched access.js account into the req.user object the rest of the
+// app expects (many controllers read req.user?.user_id / .role as a plain
+// string to stamp createdBy/issuedBy/etc columns — email fills that role now).
+function toReqUser(account) {
+  return {
+    user_id: account.email,
+    email: account.email,
+    username: account.email,
+    full_name: account.fullName,
+    role: account.role,       // 'admin' (full access) | 'employee' (read-only)
+    operation: account.operation, // 'gate' | 'store' | 'production' | 'admin'
+    plant: account.plant,     // set for production accounts only
+  };
 }
 
 // ─── Dev bypass ─────────────────────────────────────────────────────────────
@@ -76,14 +63,19 @@ const BYPASS_AUTH =
   process.env.BYPASS_AUTH === "true" &&
   process.env.NODE_ENV !== "production";
 
-const DEV_USER = {
-  user_id: "dev-user",
-  username: "dev",
-  full_name: "Dev Admin",
+const DEV_USER = toReqUser({
+  email: "dev@agrilife.com",
+  fullName: "Dev Super Admin",
   role: "admin",
-};
+  operation: "admin",
+  plant: null,
+});
+
+const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 // ─── Express middleware: authenticate ────────────────────────────────────────
+// Verifies the token, sets req.user, and enforces the blanket "employees are
+// read-only" rule on every route this is applied to.
 
 export function authenticate(req, res, next) {
   if (BYPASS_AUTH) {
@@ -100,7 +92,18 @@ export function authenticate(req, res, next) {
     }
     const token = authHeader.slice(7);
     const payload = verifyJwt(token);
-    req.user = payload; // { user_id, username, role, full_name }
+    const account = findAccount(payload.email);
+    if (!account) {
+      return res.status(401).json({ success: false, error: "Account no longer exists" });
+    }
+    req.user = toReqUser(account);
+
+    if (MUTATING_METHODS.has(req.method) && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        error: "Read-only account — this operation requires an administrator account.",
+      });
+    }
     next();
   } catch (err) {
     return res
@@ -109,15 +112,19 @@ export function authenticate(req, res, next) {
   }
 }
 
-// ─── Express middleware factory: authorize(roles[]) ───────────────────────────
+// ─── Express middleware factory: authorize(operations[]) ─────────────────────
+// Restricts a route to accounts belonging to one of the given operations.
+// The 'admin' operation is a super-admin and always passes. Also runs
+// authenticate() first, so the read-only-for-employees rule still applies.
 
-export function authorize(roles = []) {
+export function authorize(operations = []) {
   return function (req, res, next) {
     authenticate(req, res, () => {
-      if (roles.length && !roles.includes(req.user?.role)) {
+      const op = req.user?.operation;
+      if (op !== "admin" && operations.length && !operations.includes(op)) {
         return res.status(403).json({
           success: false,
-          error: `Access denied. Required role: ${roles.join(" or ")}. Your role: ${req.user?.role}`,
+          error: `Access denied. This module requires: ${operations.join(" or ")}. Your operation: ${op}`,
         });
       }
       next();
@@ -125,17 +132,9 @@ export function authorize(roles = []) {
   };
 }
 
-// Alias for admin only
+// Alias for admin-operation only (super-admin)
 export const adminOnly = authorize(["admin"]);
 
-export const storeOrAbove = authorize([
-  "store_person",
-  "store_manager",
-  "admin",
-]);
+export const storeOrAbove = authorize(["store"]);
 
-export const managerOrAbove = authorize([
-  "store_manager",
-  "planning_manager",
-  "admin",
-]);
+export const managerOrAbove = authorize(["store"]);

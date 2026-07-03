@@ -1,0 +1,79 @@
+/* StoreConfirmForm */
+
+.scf-wrap {
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.scf-header {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 12px;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scf-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scf-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.scf-input {
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.scf-dropdown {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.scf-dropdown-item {
+  padding: 9px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.scf-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.scf-item-code {
+  font-weight: 700;
+}
+
+.scf-item-cat {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.scf-no-items {
+  padding: 10px 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}

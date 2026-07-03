@@ -1,6 +1,6 @@
 import prisma from '../../../../db.js'
 
-export async function getAtRiskOrders(req, res) {
+export const getAtRiskOrders = async (req, res) => {
   try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -16,6 +16,6 @@ export async function getAtRiskOrders(req, res) {
 
     return res.json({ success: true, data })
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }

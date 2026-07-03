@@ -1,0 +1,134 @@
+/* SalesFilterBar */
+
+.sfb-container {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.sfb-row1 {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr 1.2fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sfb-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sfb-input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  font-size: 13px;
+  background: #fff;
+  outline: none;
+  color: #0f172a;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.sfb-input:focus {
+  border-color: #16a34a;
+}
+
+.sfb-search-wrap {
+  position: relative;
+}
+
+.sfb-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.sfb-search-input {
+  padding-left: 32px;
+}
+
+.sfb-select {
+  cursor: pointer;
+}
+
+.sfb-row2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sfb-date-col {
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+.sfb-spacer {
+  flex: 1;
+}
+
+.sfb-count {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sfb-count--active {
+  color: #16a34a;
+}
+
+.sfb-count--default {
+  color: #94a3b8;
+}
+
+.sfb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Chip */
+.sfb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sfb-chip__remove {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: #86efac;
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.sfb-chip__remove:hover {
+  color: #16a34a;
+}

@@ -1,0 +1,141 @@
+/* OutwardTable */
+
+.ot-empty {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.ot-empty-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.ot-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ot-empty-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.ot-wrap {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.ot-toolbar {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ot-toolbar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ot-badge {
+  padding: 3px 10px;
+  background: #fff7ed;
+  color: #f97316;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ot-scroll {
+  overflow-x: auto;
+}
+
+.ot-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ot-thead-row {
+  background: #f8fafc;
+}
+
+.ot-th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.ot-row {
+  border-top: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+
+.ot-row--even { background: #fff; }
+.ot-row--odd  { background: #fafafa; }
+.ot-row:hover { background: #fff7ed; }
+
+.ot-td { padding: 12px 14px; }
+
+.ot-td-receiver {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ot-td-text {
+  font-size: 13px;
+  color: #475569;
+}
+
+.ot-td-date {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.ot-pagination {
+  padding: 8px 16px;
+}
+
+/* StatusBadge */
+.ot-status {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.ot-status--pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.ot-status--approved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.ot-status--rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* DeleteRequestBadge */
+.ot-del-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

@@ -12,7 +12,9 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { bomSendApi } from '../../api/sales.js'
-import Pagination from '../../components/erp/Pagination.jsx'
+import Pagination from '../../components/pagination/Pagination.jsx'
+import { Button, IconButton } from '../../components/ui'
+import { X, RefreshCw } from 'lucide-react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(date) {
@@ -235,12 +237,14 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                   className="flex-1 border-2 border-indigo-300 bg-white rounded-lg px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                   autoComplete="off"
                 />
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => handleScan({ key: 'Enter' })}
-                  disabled={scanning || !scanInput.trim()}
-                  className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition whitespace-nowrap">
+                  disabled={!scanInput.trim()}
+                  loading={scanning}
+                >
                   {scanning ? '⏳' : 'Issue'}
-                </button>
+                </Button>
               </div>
               <p className="text-xs text-gray-400 mt-1.5">
                 💡 USB QR scanner auto-fills this field and presses Enter. System issues min(pack qty, remaining needed).
@@ -341,17 +345,20 @@ function MaterialLine({ line, bomId, sendId, onIssued }) {
                             autoFocus
                           />
                         </div>
-                        <button
+                        <Button
+                          variant="primary"
                           onClick={handleManualIssue}
-                          disabled={issuing || !manualQty}
-                          className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition whitespace-nowrap">
+                          disabled={!manualQty}
+                          loading={issuing}
+                        >
                           {issuing ? '⏳ Issuing…' : '✅ Confirm Issue'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="outline-gray"
                           onClick={() => { setManualPack(null); setManualQty('') }}
-                          className="px-3 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50">
+                        >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
 
                       {/* Show pack split info if partial */}
@@ -453,7 +460,7 @@ function BomDrawer({ bomId, onClose, onRefresh }) {
                 </>
               ) : null}
             </div>
-            <button onClick={onClose} className="text-white/60 hover:text-white text-2xl leading-none ml-4 mt-1">×</button>
+            <IconButton icon={X} onClick={onClose} variant="ghost" size="sm" tooltip="Close" className="text-white/60 hover:text-white ml-4 mt-1" />
           </div>
         </div>
 
@@ -514,15 +521,17 @@ function BomDrawer({ bomId, onClose, onRefresh }) {
               Each issue deducts from Pack Balance and writes a StockLedger outward entry
             </p>
             {bom.status !== 'ISSUED' && (
-              <button
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={async () => {
                   if (!confirm('Cancel this BOM? Stock already issued will not be reversed.')) return
                   await bomSendApi.updateStatus(bomId, 'CANCELLED')
                   onRefresh(); onClose()
                 }}
-                className="text-xs text-red-500 border border-red-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-red-50 transition whitespace-nowrap">
+              >
                 Cancel BOM
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -624,11 +633,10 @@ export default function BomIssuance() {
           <option value="ALL">All Sections</option>
           {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <button onClick={() => setFilterStatus('ALL')} className="text-xs text-gray-500 hover:underline">Clear</button>
-        <button onClick={load}
-          className="text-sm text-indigo-600 border border-indigo-200 px-3 py-2 rounded-lg font-semibold hover:bg-indigo-50 transition ml-auto">
-          ↻ Refresh
-        </button>
+        <Button variant="ghost" size="xs" onClick={() => setFilterStatus('ALL')}>Clear</Button>
+        <Button variant="outline" size="sm" icon={RefreshCw} onClick={load} className="ml-auto">
+          Refresh
+        </Button>
       </div>
 
       {/* Table */}

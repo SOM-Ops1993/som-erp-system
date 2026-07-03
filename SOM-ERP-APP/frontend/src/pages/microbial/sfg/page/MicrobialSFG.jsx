@@ -5,9 +5,10 @@
  *   — grouped by microbe → type → containers → FIFO batches
  */
 import { useState, useEffect } from 'react'
-import Pagination from '../../../../components/erp/Pagination.jsx'
+import Pagination from '../../../../components/pagination/Pagination.jsx'
 import { microbialSfgApi } from '../../../../api/microbial.js'
-import { sfgApi } from '../../../../api/inventory.js'
+import { BackButton } from '../../../../components/ui'
+import './MicrobialSFG.css'
 
 function fmtCfu(v) {
   if (!v) return '—'
@@ -24,12 +25,6 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
 }
 
-const FILL_COLOR = {
-  FULL:    { bg: '#dcfce7', c: '#166534' },
-  PARTIAL: { bg: '#fef9c3', c: '#854d0e' },
-  EMPTY:   { bg: '#fee2e2', c: '#991b1b' },
-}
-
 const PLANTS = [
   { key: 'MICROBIAL', label: '🦠 Microbial',  icon: '🦠' },
   { key: 'POWDER',    label: '🧪 Powder',      icon: '🧪' },
@@ -38,14 +33,10 @@ const PLANTS = [
   { key: 'GRANULES',  label: '🌾 Granules',    icon: '🌾' },
 ]
 
-const S = {
-  page:  { padding: '24px', fontFamily: "'Inter',system-ui,sans-serif" },
-  h1:    { fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 },
-  sub:   { fontSize: '13px', color: '#64748b', marginTop: '4px' },
-  card:  { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' },
-  badge: (bg, c) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: '99px', fontSize: '10px', fontWeight: 700, background: bg, color: c }),
-  th:    { textAlign: 'left', padding: '8px 12px', fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.06em', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', whiteSpace: 'nowrap' },
-  td:    { padding: '9px 12px', borderBottom: '1px solid #f1f5f9', fontSize: '12px', color: '#0f172a', verticalAlign: 'top' },
+function fillBadgeCls(fill) {
+  if (fill === 'FULL')    return 'msfg-badge msfg-badge--fill-full'
+  if (fill === 'PARTIAL') return 'msfg-badge msfg-badge--fill-partial'
+  return 'msfg-badge msfg-badge--fill-empty'
 }
 
 function MicrobialTab() {
@@ -55,7 +46,7 @@ function MicrobialTab() {
   const [expanded, setExpanded]     = useState({})
   const [searchMicrobe, setSearch]  = useState('')
   const [page, setPage]             = useState(1)
-  const [limit, setLimit]            = useState(15)
+  const [limit, setLimit]           = useState(15)
 
   useEffect(() => {
     Promise.all([
@@ -86,20 +77,20 @@ function MicrobialTab() {
   const keys = Object.keys(grouped).filter(k => !searchMicrobe || k.toLowerCase().includes(searchMicrobe.toLowerCase()))
   useEffect(() => { setPage(1) }, [searchMicrobe])
 
-  if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading cold room stock…</div>
+  if (loading) return <div className="msfg-loading">Loading cold room stock…</div>
 
   if (keys.length === 0) return (
-    <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
-      <div style={{ fontSize: '42px', marginBottom: '10px' }}>🦠</div>
+    <div className="msfg-empty">
+      <div className="msfg-empty-icon">🦠</div>
       <p>No microbial SFG stock found. Start by recording inward entries in <strong>Microbial Inward</strong>.</p>
     </div>
   )
 
   return (
     <div>
-      <div style={{ marginBottom: '16px' }}>
+      <div className="msfg-search-wrap">
         <input placeholder="Search microbe…" value={searchMicrobe} onChange={e => { setSearch(e.target.value); setPage(1) }}
-          style={{ padding: '9px 14px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', width: '260px', outline: 'none' }} />
+          className="msfg-search" />
       </div>
       {keys.slice((page - 1) * limit, page * limit).map(mk => {
         const { microbe_code, microbe_name, types } = grouped[mk]
@@ -107,25 +98,24 @@ function MicrobialTab() {
         const totalKg    = allBatches.reduce((s, b) => s + Number(b.remaining_qty_kg), 0)
         const isOpen     = expanded[mk] !== false
         return (
-          <div key={mk} style={S.card}>
-            <div onClick={() => toggle(mk)}
-              style={{ padding: '14px 20px', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>{microbe_name}</span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', background: '#e2e8f0', borderRadius: '6px', padding: '2px 8px' }}>{microbe_code}</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', background: '#dcfce7', borderRadius: '6px', padding: '2px 10px' }}>
+          <div key={mk} className="msfg-card">
+            <div onClick={() => toggle(mk)} className="msfg-group-header">
+              <div className="msfg-group-info">
+                <div className="msfg-group-title-row">
+                  <span className="msfg-group-name">{microbe_name}</span>
+                  <span className="msfg-group-code">{microbe_code}</span>
+                  <span className="msfg-group-total">
                     {totalKg.toFixed(2)} kg total
                   </span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
+                <div className="msfg-group-meta">
                   {Object.keys(types).length} type(s) · {allBatches.length} active batch(es)
                 </div>
               </div>
-              <span style={{ fontSize: '14px', color: '#94a3b8' }}>{isOpen ? '▲' : '▼'}</span>
+              <span className="msfg-toggle-icon">{isOpen ? '▲' : '▼'}</span>
             </div>
             {isOpen && (
-              <div style={{ padding: '16px 20px' }}>
+              <div className="msfg-group-body">
                 {Object.entries(types).map(([typeName, typeData]) => {
                   const typeBatches = typeData.containers.flatMap(c => (batchByContainer[c.container_id] || []))
                   const typeKg      = typeBatches.reduce((s, b) => s + Number(b.remaining_qty_kg), 0)
@@ -133,53 +123,52 @@ function MicrobialTab() {
                     ? typeBatches.reduce((s, b) => s + Number(b.inhouse_cfu_per_g) * Number(b.remaining_qty_kg), 0) / (typeKg || 1)
                     : 0
                   return (
-                    <div key={typeName} style={{ marginBottom: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                      <div style={{ padding: '10px 14px', background: '#eff6ff', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontWeight: 700, color: '#1d4ed8', fontSize: '13px' }}>{typeName}</span>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>{typeKg.toFixed(3)} kg available</span>
-                        <span style={{ fontSize: '12px', color: '#64748b' }}>Avg CFU/g: <strong>{fmtCfu(avgCfu)}</strong></span>
-                        <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>{typeBatches.length} batch(es) · FIFO order ↓</span>
+                    <div key={typeName} className="msfg-type-section">
+                      <div className="msfg-type-header">
+                        <span className="msfg-type-name">{typeName}</span>
+                        <span className="msfg-type-meta">{typeKg.toFixed(3)} kg available</span>
+                        <span className="msfg-type-meta">Avg CFU/g: <strong>{fmtCfu(avgCfu)}</strong></span>
+                        <span className="msfg-type-fifo-hint">{typeBatches.length} batch(es) · FIFO order ↓</span>
                       </div>
                       {typeData.containers.map(cont => {
-                        const fs = FILL_COLOR[cont.fill_status] || FILL_COLOR.PARTIAL
                         const batches = batchByContainer[cont.container_id] || []
                         return (
-                          <div key={cont.container_id} style={{ borderTop: '1px solid #f1f5f9' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', background: '#fafafa' }}>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{cont.container_code}</span>
-                              <span style={S.badge(fs.bg, fs.c)}>{cont.fill_status}</span>
-                              <span style={{ fontSize: '12px', color: '#64748b' }}>{Number(cont.current_qty_kg).toFixed(3)} kg in container</span>
-                              {cont.location && <span style={{ fontSize: '12px', color: '#94a3b8' }}>📍 {cont.location}</span>}
+                          <div key={cont.container_id} className="msfg-container-row">
+                            <div className="msfg-container-header">
+                              <span className="msfg-container-code">{cont.container_code}</span>
+                              <span className={fillBadgeCls(cont.fill_status)}>{cont.fill_status}</span>
+                              <span className="msfg-container-qty">{Number(cont.current_qty_kg).toFixed(3)} kg in container</span>
+                              {cont.location && <span className="msfg-container-loc">📍 {cont.location}</span>}
                             </div>
                             {batches.length > 0 ? (
-                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                              <table className="msfg-fifo-table">
                                 <thead>
-                                  <tr style={{ background: '#f1f5f9' }}>
+                                  <tr className="msfg-fifo-thead-row">
                                     {['FIFO','Batch Code','Harvest Date','Inhouse CFU/g','Remaining (kg)','Moisture','Shelf Life'].map(h => (
-                                      <th key={h} style={{ ...S.th, fontWeight: 600, padding: h === 'FIFO' ? '5px 14px 5px 28px' : '5px 12px' }}>{h}</th>
+                                      <th key={h} className={`msfg-fifo-th ${h === 'FIFO' ? 'msfg-fifo-th--indent' : 'msfg-fifo-th--compact'}`}>{h}</th>
                                     ))}
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {batches.map((b, fi) => (
-                                    <tr key={b.inward_id} style={{ background: fi === 0 ? '#fffbeb' : 'transparent' }}>
-                                      <td style={{ ...S.td, padding: '6px 12px 6px 28px' }}>
+                                    <tr key={b.inward_id} className={fi === 0 ? 'msfg-fifo-tr--next' : 'msfg-fifo-tr--rest'}>
+                                      <td className="msfg-fifo-td msfg-fifo-td--indent">
                                         {fi === 0
-                                          ? <span style={{ fontSize: '10px', fontWeight: 700, color: '#d97706', background: '#fef3c7', borderRadius: '4px', padding: '1px 6px' }}>NEXT</span>
-                                          : <span style={{ color: '#94a3b8' }}>#{fi + 1}</span>}
+                                          ? <span className="msfg-fifo-next-badge">NEXT</span>
+                                          : <span className="msfg-fifo-rest-no">#{fi + 1}</span>}
                                       </td>
-                                      <td style={{ ...S.td, padding: '6px 12px', fontFamily: 'monospace' }}>{b.biomass_batch_code}</td>
-                                      <td style={{ ...S.td, padding: '6px 12px' }}>{fmtDate(b.date_of_harvest)}</td>
-                                      <td style={{ ...S.td, padding: '6px 12px', fontWeight: 700 }}>{fmtCfu(b.inhouse_cfu_per_g)}</td>
-                                      <td style={{ ...S.td, padding: '6px 12px', fontWeight: 700, color: '#166534' }}>{Number(b.remaining_qty_kg).toFixed(3)}</td>
-                                      <td style={{ ...S.td, padding: '6px 12px' }}>{b.moisture != null ? `${b.moisture}%` : '—'}</td>
-                                      <td style={{ ...S.td, padding: '6px 12px' }}>{b.shelf_life_days != null ? `${b.shelf_life_days}d` : '—'}</td>
+                                      <td className="msfg-fifo-td msfg-fifo-td--compact msfg-fifo-td--mono">{b.biomass_batch_code}</td>
+                                      <td className="msfg-fifo-td msfg-fifo-td--compact">{fmtDate(b.date_of_harvest)}</td>
+                                      <td className="msfg-fifo-td msfg-fifo-td--compact msfg-fifo-td--bold">{fmtCfu(b.inhouse_cfu_per_g)}</td>
+                                      <td className="msfg-fifo-td msfg-fifo-td--compact msfg-fifo-td--green">{Number(b.remaining_qty_kg).toFixed(3)}</td>
+                                      <td className="msfg-fifo-td msfg-fifo-td--compact">{b.moisture != null ? `${b.moisture}%` : '—'}</td>
+                                      <td className="msfg-fifo-td msfg-fifo-td--compact">{b.shelf_life_days != null ? `${b.shelf_life_days}d` : '—'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
                               </table>
                             ) : (
-                              <div style={{ padding: '8px 28px', fontSize: '11px', color: '#94a3b8' }}>No active batches in this container</div>
+                              <div className="msfg-no-batches">No active batches in this container</div>
                             )}
                           </div>
                         )
@@ -192,7 +181,7 @@ function MicrobialTab() {
           </div>
         )
       })}
-      <div style={{ marginTop: '12px' }}>
+      <div className="msfg-pagination">
         <Pagination page={page} total={keys.length} limit={limit} onChange={setPage} onLimitChange={l => { setLimit(l); setPage(1) }} />
       </div>
     </div>
@@ -201,11 +190,11 @@ function MicrobialTab() {
 
 function OtherPlantTab({ plant }) {
   return (
-    <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
-      <div style={{ fontSize: '42px', marginBottom: '12px' }}>{plant.icon}</div>
-      <div style={{ fontSize: '18px', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>{plant.label} SFG</div>
-      <div style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 20px', display: 'inline-block', fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', color: '#94a3b8' }}>COMING SOON</div>
-      <p style={{ fontSize: '13px', color: '#94a3b8', maxWidth: '320px', margin: '12px auto 0' }}>
+    <div className="msfg-coming-soon">
+      <div className="msfg-coming-soon-icon">{plant.icon}</div>
+      <div className="msfg-coming-soon-title">{plant.label} SFG</div>
+      <div className="msfg-coming-soon-badge">COMING SOON</div>
+      <p className="msfg-coming-soon-desc">
         SFG tracking for {plant.label.replace(/[^\w\s]/g,'')} plant will be integrated here.
       </p>
     </div>
@@ -215,36 +204,18 @@ function OtherPlantTab({ plant }) {
 export default function MicrobialSFG() {
   const [activeTab, setActiveTab] = useState('MICROBIAL')
   return (
-    <div style={S.page}>
-      <div style={{ marginBottom: '14px' }}>
-        <button
-          onClick={() => window.history.back()}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '7px 14px', borderRadius: '10px',
-            background: '#fff', border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            fontSize: '13px', fontWeight: 500, color: '#475569', cursor: 'pointer',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#0f172a' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#475569' }}
-        >
-          ← Back
-        </button>
+    <div className="msfg-page">
+      <div className="msfg-back">
+        <BackButton />
       </div>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={S.h1}>⚗️ SFG — Semi-Finished Goods</h1>
-        <p style={S.sub}>Plant-wise SFG stock overview. Select a plant to view availability.</p>
+      <div className="msfg-header">
+        <h1 className="msfg-h1">⚗️ SFG — Semi-Finished Goods</h1>
+        <p className="msfg-sub">Plant-wise SFG stock overview. Select a plant to view availability.</p>
       </div>
-      <div style={{ display: 'flex', gap: '0', marginBottom: '24px', borderBottom: '2px solid #e2e8f0', overflowX: 'auto' }}>
+      <div className="msfg-tab-bar">
         {PLANTS.map(p => (
-          <button key={p.key} onClick={() => setActiveTab(p.key)} style={{
-            padding: '10px 22px', fontSize: '13px', fontWeight: activeTab === p.key ? 700 : 500,
-            color: activeTab === p.key ? '#1d4ed8' : '#64748b',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            borderBottom: activeTab === p.key ? '3px solid #1d4ed8' : '3px solid transparent',
-            marginBottom: '-2px', transition: 'all 0.15s', whiteSpace: 'nowrap',
-          }}>
+          <button key={p.key} onClick={() => setActiveTab(p.key)}
+            className={`msfg-tab-btn${activeTab === p.key ? ' msfg-tab-btn--active' : ''}`}>
             {p.label}
           </button>
         ))}

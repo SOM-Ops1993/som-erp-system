@@ -30,7 +30,7 @@ const updateBomSendStatus = async (req, res) => {
     });
     return res.json({ success: true, data: send });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' });
   }
 };
 

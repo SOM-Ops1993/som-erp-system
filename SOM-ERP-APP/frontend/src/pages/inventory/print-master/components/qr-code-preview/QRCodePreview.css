@@ -1,0 +1,170 @@
+/* QRCodePreview */
+
+.qrp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 24px 16px;
+}
+
+.qrp-controls {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.qrp-controls-title {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.qrp-btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+.qrp-btn-print {
+  padding: 8px 20px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.qrp-btn-close {
+  padding: 8px 16px;
+  background: #fff;
+  color: #374151;
+  border: none;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.qrp-grid {
+  width: 100%;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 283pt);
+  gap: 12px;
+  justify-content: center;
+}
+
+/* PackLabel */
+.qrp-label {
+  width: 283pt;
+  height: 142pt;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: Helvetica, Arial, sans-serif;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  background: #fff;
+}
+
+.qrp-label-header {
+  background: #1a3a6b;
+  color: #fff;
+  padding: 5px 10px;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.qrp-label-body {
+  display: flex;
+  flex: 1;
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.qrp-label-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.qrp-field-key {
+  font-size: 7px;
+  color: #666;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.qrp-field-item-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+
+.qrp-field-qty {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+}
+
+.qrp-field-lot {
+  font-size: 11px;
+  font-weight: 700;
+  color: #222;
+}
+
+.qrp-qr-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.qrp-qr-img {
+  display: block;
+}
+
+.qrp-qr-placeholder {
+  width: 72px;
+  height: 72px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #999;
+}
+
+.qrp-qr-date {
+  font-size: 7px;
+  color: #555;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.qrp-label-footer {
+  background: #d6e4f0;
+  color: #1a3a6b;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 3px 10px;
+  flex-shrink: 0;
+}

@@ -10,10 +10,12 @@
  *   location_position → Batch / Container Code
  */
 import { useState, useEffect, useCallback } from 'react'
-import Pagination from '../../components/erp/Pagination.jsx'
+import Pagination from '../../components/pagination/Pagination.jsx'
 import { microbialApi } from '../../api/microbial.js'
 import { erpStrainsApi } from '../../api/masters.js'
-import { useAuth } from '../../components/erp/AuthContext.jsx'
+import { useAuth } from '../../components/auth/AuthContext.jsx'
+import { Button } from '../../components/ui'
+import { RefreshCw } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function fmtCfu(val) {
@@ -63,9 +65,6 @@ function Card({ label, value, sub, accent }) {
 
 const INPUT = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }
 const LABEL = { display: 'block', fontSize: '11px', color: '#64748b', fontWeight: 700, marginBottom: '4px', letterSpacing: '0.06em' }
-const BTN_PRIMARY = { padding: '10px 22px', background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '7px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', letterSpacing: '0.02em' }
-const BTN_SECONDARY = { padding: '9px 18px', background: '#f1f5f9', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '7px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }
-
 // ── Tab 1: Dashboard ──────────────────────────────────────────────────────────
 function DashboardTab({ containers, transactions, loading }) {
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading dashboard…</div>
@@ -194,7 +193,7 @@ function StockTab({ containers, strains, loading, onRefresh }) {
           <option value="at_risk">At Risk</option>
           <option value="exhausted">Exhausted</option>
         </select>
-        <button onClick={onRefresh} style={{ ...BTN_SECONDARY, marginLeft: 'auto' }}>↻ Refresh</button>
+        <Button variant="outline-gray" icon={RefreshCw} onClick={onRefresh} className="ml-auto">Refresh</Button>
         <span style={{ fontSize: '12px', color: '#94a3b8' }}>{filtered.length} batches</span>
       </div>
 
@@ -395,9 +394,9 @@ function InwardTab({ strains, onRefresh }) {
             {error && <div style={{ padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '12px', color: '#dc2626' }}>{error}</div>}
             {success && <div style={{ padding: '10px 12px', background: '#dcfce7', borderRadius: '7px', fontSize: '12px', color: '#166534' }}>{success}</div>}
 
-            <button type="submit" disabled={saving || !canInward} style={{ ...BTN_PRIMARY, opacity: (!canInward || saving) ? 0.5 : 1 }}>
+            <Button type="submit" variant="primary" loading={saving} disabled={!canInward} fullWidth>
               {saving ? 'Saving…' : '+ Add to Cold Room'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -494,7 +493,6 @@ function IssueCalculatorTab({ strains, onRefresh }) {
       const totalBiomassNeeded = orderQtyNum * orderedCfuNum / inhouseCfu * mfNum
       // Fraction of this container needed
       const available = Number(c.volume_litres)
-      const totalNeededAcrossAll = orderQtyNum * orderedCfuNum / inhouseCfu * mfNum
       // Simpler: allocate pro-rata of total biomass needed
       if (plan.length === 0) {
         // recalculate total biomass based on first container's CFU
@@ -592,9 +590,9 @@ function IssueCalculatorTab({ strains, onRefresh }) {
             <input type="number" step="0.01" min="1" max="2" value={inputs.mf} onChange={e => set('mf', e.target.value)} style={INPUT} />
           </div>
           <div>
-            <button onClick={calculate} style={{ ...BTN_PRIMARY, width: '100%', padding: '11px' }}>
+            <Button variant="primary" onClick={calculate} fullWidth>
               Calculate FIFO →
-            </button>
+            </Button>
           </div>
         </div>
         {calcError && <div style={{ marginTop: '12px', padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '12px', color: '#dc2626' }}>{calcError}</div>}
@@ -674,9 +672,9 @@ function IssueCalculatorTab({ strains, onRefresh }) {
                 </div>
               </div>
               {issueError && <div style={{ marginBottom: '12px', padding: '10px 12px', background: '#fef2f2', borderRadius: '7px', fontSize: '12px', color: '#dc2626' }}>{issueError}</div>}
-              <button onClick={handleIssue} disabled={issuing} style={{ ...BTN_PRIMARY, background: '#16a34a', minWidth: '200px' }}>
+              <Button variant="success" onClick={handleIssue} loading={issuing}>
                 {issuing ? 'Issuing…' : `🚀 Issue ${allocation.plan.length} Container${allocation.plan.length > 1 ? 's' : ''} (${allocation.total_biomass_available.toFixed(3)} kg)`}
-              </button>
+              </Button>
             </div>
           )}
           {!canIssue && (
@@ -696,9 +694,9 @@ function IssueCalculatorTab({ strains, onRefresh }) {
             Notifications have been triggered. Check the Notification Bell for delivery confirmation.
           </div>
           <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }}>
-            <button onClick={() => { setIssueResult(null); setInputs(f => ({ ...f, strain_id: '', order_qty: '', ordered_cfu: '' })) }} style={BTN_PRIMARY}>
+            <Button variant="primary" onClick={() => { setIssueResult(null); setInputs(f => ({ ...f, strain_id: '', order_qty: '', ordered_cfu: '' })) }}>
               + New Issue
-            </button>
+            </Button>
           </div>
         </div>
       )}
