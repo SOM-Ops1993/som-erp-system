@@ -17,6 +17,7 @@ export const PRODUCTION_PLANTS = ['Microbial', 'Nano', 'Botanical', 'Liquid', 'P
 
 function account(email, password, operation, role, plant = null) {
   return { email, password, operation, role, plant, fullName: email.split('@')[0] }
+  
 }
 
 export const accounts = [
