@@ -1,8 +1,10 @@
-/* Fixed aspect ratio + object-fit: cover on the video below keeps the feed
-   filling the box regardless of the stream's native resolution — without it,
-   a stream narrower than the container leaves a black gap under the video. */
+/* Fixed height (matches the sibling scanners in warehouse-to-container /
+   stock-loss-adjustment) + object-fit: cover on the video below keeps the
+   feed filling the box regardless of the stream's native resolution —
+   without object-fit, a stream narrower than the container leaves a black
+   gap under the video. */
 .pi-camera-container {
-  aspect-ratio: 1 / 1;
+  height: 280px;
 }
 
 .pi-camera-container video {
