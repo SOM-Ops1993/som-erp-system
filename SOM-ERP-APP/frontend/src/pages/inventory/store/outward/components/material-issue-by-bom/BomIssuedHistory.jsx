@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, Fragment } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
 import { Button } from '../../../../../../components/ui'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { readSessions, deleteSession } from './bomSessions.js'
+import { readSessions } from './bomSessions.js'
 
 function fmtDate(iso) {
   return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -39,8 +39,6 @@ export default function BomIssuedHistory({ onResume }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const removeSession = (id) => { deleteSession(id); setSessions(readSessions()) }
-
   // Group individual issuance lines back into their BOM batch
   const historyBatches = useMemo(() => {
     const map = new Map()
@@ -62,9 +60,12 @@ export default function BomIssuedHistory({ onResume }) {
     const sessionKeys = new Set(sessions.map(s => `${s.productName}__${s.batchRef || ''}`))
 
     const sessionRows = sessions.map(s => {
-      const total     = s.bomLines?.length || 0
-      const done      = s.bomLines?.filter(l => l.issued >= l.required - 0.001).length || 0
-      const anyIssued = s.bomLines?.some(l => (l.issued || 0) > 0.001)
+      // Orphaned lines (dropped from the recipe, kept only for audit) don't
+      // count toward completion — same exclusion as MaterialIssueByBOM.jsx.
+      const activeLines = (s.bomLines || []).filter(l => !l.orphaned)
+      const total     = activeLines.length
+      const done      = activeLines.filter(l => l.issued >= l.required - 0.001).length
+      const anyIssued = activeLines.some(l => (l.issued || 0) > 0.001)
       const status    = total > 0 && done === total ? 'Fully Issued' : anyIssued ? 'Partially Issued' : 'Pending'
       return {
         key: `session-${s.id}`, isSession: true, session: s,
@@ -149,15 +150,10 @@ export default function BomIssuedHistory({ onResume }) {
                         {row.lastUpdated ? fmtDate(row.lastUpdated) : '—'}
                       </td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                        {row.isSession && (
-                          <>
-                            <Button onClick={() => onResume(row.session)} variant="purple" size="xs" className="mr-1.5">
-                              Resume →
-                            </Button>
-                            <Button onClick={() => removeSession(row.session.id)} variant="danger" size="xs">
-                              Delete
-                            </Button>
-                          </>
+                        {row.isSession && row.status !== 'Fully Issued' && (
+                          <Button onClick={() => onResume(row.session)} variant="purple" size="xs">
+                            Resume →
+                          </Button>
                         )}
                       </td>
                     </tr>

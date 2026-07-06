@@ -1,27 +1,6 @@
-﻿import { Button, IconButton } from "../../../../../components/ui";
+import { Button, IconButton } from "../../../../../components/ui";
 import { X, Search } from "lucide-react";
-
-const INPUT = {
-  padding: "8px 12px",
-  border: "1px solid #e2e8f0",
-  borderRadius: "7px",
-  fontSize: "13px",
-  background: "#fff",
-  outline: "none",
-  color: "#0f172a",
-  width: "100%",
-  boxSizing: "border-box",
-};
-
-const LABEL = {
-  fontSize: "10px",
-  fontWeight: 700,
-  color: "#94a3b8",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  display: "block",
-  marginBottom: "4px",
-};
+import "./GateFilterBar.css";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -39,71 +18,41 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
   const active = hasActiveFilters(filters);
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: "10px",
-        border: "1px solid #e2e8f0",
-        padding: "14px 18px",
-        marginBottom: "16px",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-      }}
-    >
+    <div className="gfb-wrap">
       {/* Row 1: search + invoice + status */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1.5fr 1.2fr",
-          gap: "12px",
-          marginBottom: "10px",
-        }}
-      >
+      <div className="gfb-row1">
         {/* Search */}
         <div>
-          <label style={LABEL}>Search by {searchLabel}</label>
-          <div style={{ position: "relative" }}>
-            <Search
-              size={14}
-              style={{
-                position: "absolute",
-                left: "10px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#94a3b8",
-                pointerEvents: "none",
-              }}
-            />
+          <label className="gfb-label">Search by {searchLabel}</label>
+          <div className="gfb-search-wrap">
+            <Search size={14} className="gfb-search-icon" />
             <input
               value={filters.search}
               onChange={(e) => onChange("search", e.target.value)}
               placeholder={`Search ${searchLabel.toLowerCase()}…`}
-              style={{ ...INPUT, paddingLeft: "32px" }}
-              onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
-              onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+              className="gfb-input gfb-input--padded"
             />
           </div>
         </div>
 
         {/* Invoice No. */}
         <div>
-          <label style={LABEL}>Invoice No.</label>
+          <label className="gfb-label">Invoice No.</label>
           <input
             value={filters.invoice_no}
             onChange={(e) => onChange("invoice_no", e.target.value)}
             placeholder="Search invoice no…"
-            style={INPUT}
-            onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
-            onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+            className="gfb-input"
           />
         </div>
 
         {/* Status */}
         <div>
-          <label style={LABEL}>Status</label>
+          <label className="gfb-label">Status</label>
           <select
             value={filters.status}
             onChange={(e) => onChange("status", e.target.value)}
-            style={{ ...INPUT, cursor: "pointer" }}
+            className="gfb-input gfb-select"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -115,46 +64,33 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
       </div>
 
       {/* Row 2: date range + summary + clear */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-        }}
-      >
-        <div style={{ flex: "0 0 auto", minWidth: "140px" }}>
-          <label style={LABEL}>From Date</label>
+      <div className="gfb-row2">
+        <div className="gfb-date-col">
+          <label className="gfb-label">From Date</label>
           <input
             type="date"
             value={filters.from_date}
             onChange={(e) => onChange("from_date", e.target.value)}
-            style={INPUT}
+            className="gfb-input"
           />
         </div>
 
-        <div style={{ flex: "0 0 auto", minWidth: "140px" }}>
-          <label style={LABEL}>To Date</label>
+        <div className="gfb-date-col">
+          <label className="gfb-label">To Date</label>
           <input
             type="date"
             value={filters.to_date}
             onChange={(e) => onChange("to_date", e.target.value)}
-            style={INPUT}
+            className="gfb-input"
           />
         </div>
 
         {/* Spacer */}
-        <div style={{ flex: 1 }} />
+        <div className="gfb-spacer" />
 
         {/* Results summary */}
         {total !== undefined && (
-          <span
-            style={{
-              fontSize: "12px",
-              color: active ? "#3b82f6" : "#94a3b8",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-            }}
-          >
+          <span className={active ? "gfb-summary--active" : "gfb-summary--idle"}>
             {total} {total === 1 ? "record" : "records"} found
           </span>
         )}
@@ -169,16 +105,7 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
 
       {/* Active filter chips */}
       {active && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "6px",
-            marginTop: "10px",
-            paddingTop: "10px",
-            borderTop: "1px solid #f1f5f9",
-          }}
-        >
+        <div className="gfb-chips">
           {filters.search && (
             <Chip label={`${searchLabel}: "${filters.search}"`} onRemove={() => onChange("search", "")} />
           )}
@@ -202,20 +129,7 @@ export default function GateFilterBar({ tab, filters, onChange, onClear, total }
 
 function Chip({ label, onRemove }) {
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "5px",
-        padding: "3px 10px",
-        background: "#eff6ff",
-        color: "#3b82f6",
-        border: "1px solid #bfdbfe",
-        borderRadius: "99px",
-        fontSize: "11px",
-        fontWeight: 600,
-      }}
-    >
+    <span className="gfb-chip">
       {label}
       <IconButton icon={X} size="xs" onClick={onRemove} className="text-blue-300 hover:text-blue-500" />
     </span>

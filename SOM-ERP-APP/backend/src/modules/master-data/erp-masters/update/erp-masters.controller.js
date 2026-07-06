@@ -1,5 +1,6 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
+import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 // ── Items ─────────────────────────────────────────────────────────────────────
 
@@ -10,7 +11,12 @@ export const updateItem = async (req, res) => {
     const data = {}
     if (item_name !== undefined)               data.itemName              = item_name
     if (item_category !== undefined)           data.itemCategory          = item_category
-    if (uom !== undefined)                     data.uom                   = uom
+    if (uom !== undefined) {
+      const canonicalUom = normalizeUom(uom)
+      if (!CANONICAL_UNITS.includes(canonicalUom))
+        return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
+      data.uom = canonicalUom
+    }
     if (warehouse_zone !== undefined)          data.warehouseZone         = warehouse_zone
     if (reorder_level !== undefined)           data.reorderLevel          = reorder_level
     if (decanting_tolerance_pct !== undefined) data.decantingTolerancePct = decanting_tolerance_pct

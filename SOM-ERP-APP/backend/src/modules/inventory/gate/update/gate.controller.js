@@ -2,10 +2,11 @@ import prisma from '../../../../db.js'
 
 const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
-export const requestDeleteGateInward = async (req, res) => {
+const requestDeleteGateInward = async (req, res) => {
+  const {id} = req.params
   try {
     const row = await prisma.gateInward.update({
-      where: { inwardId: req.params.id },
+      where: { inwardId: id },
       data: { requestDelete: true },
     })
     return res.json({ success: true, data: row })
@@ -16,13 +17,16 @@ export const requestDeleteGateInward = async (req, res) => {
   }
 }
 
-export const requestDeleteGateOutward = async (req, res) => {
+const requestDeleteGateOutward = async (req, res) => {
+  const {id} = req.params
   try {
+
     const row = await prisma.gateOutward.update({
-      where: { outwardId: req.params.id },
+      where: { outwardId: id },
       data: { requestDelete: true },
     })
     return res.json({ success: true, data: row })
+
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('requestDeleteGateOutward error:', err.message)
@@ -30,9 +34,10 @@ export const requestDeleteGateOutward = async (req, res) => {
   }
 }
 
-export const updateGateInwardStatus = async (req, res) => {
+const updateGateInwardStatus = async (req, res) => {
+  const { status } = req.body || {}
   try {
-    const { status } = req.body || {}
+
     if (!status || !VALID_STATUSES.includes(status))
       return res.status(400).json({
         success: false,
@@ -45,6 +50,7 @@ export const updateGateInwardStatus = async (req, res) => {
       data: { status },
     })
     return res.json({ success: true, data: row })
+
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     console.error('updateGateInwardStatus error:', err.message)
@@ -52,10 +58,12 @@ export const updateGateInwardStatus = async (req, res) => {
   }
 }
 
-export const updateGateOutwardStatus = async (req, res) => {
+const updateGateOutwardStatus = async (req, res) => {
+  const { status } = req.body || {}
+  const { id } = req.params
   try {
-    const { status } = req.body || {}
-    if (!status || !VALID_STATUSES.includes(status))
+
+     if (!status || !VALID_STATUSES.includes(status))
       return res.status(400).json({
         success: false,
         error: `status must be one of: ${VALID_STATUSES.join(', ')}`,
@@ -63,13 +71,24 @@ export const updateGateOutwardStatus = async (req, res) => {
       })
 
     const row = await prisma.gateOutward.update({
-      where: { outwardId: req.params.id },
+      where: { outwardId: id },
       data: { status },
     })
+
     return res.json({ success: true, data: row })
+
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
     console.error('updateGateOutwardStatus error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
+}
+
+
+
+export {
+  requestDeleteGateInward,
+  requestDeleteGateOutward,
+  updateGateInwardStatus,
+  updateGateOutwardStatus,
 }

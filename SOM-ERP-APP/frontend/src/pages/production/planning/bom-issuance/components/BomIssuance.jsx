@@ -3,6 +3,7 @@ import { recipeApi } from '../../../../../api/masters.js'
 import { planTasksApi } from '../../../../../api/production.js'
 import { genId, incrCode, scaleToQty, state as printState } from '../utils/bomPrintTemplates.js'
 import { readArchivedBoms, readMeta, archiveBoms } from '../utils/bomIssuanceStorage.js'
+import { toCanonical } from '../../../../../utils/uom.js'
 import { makeRows, toComponents, fromComponents } from './ComponentsTable.jsx'
 import IssueBomTab from './IssueBomTab.jsx'
 import PreviewTab from './PreviewTab.jsx'
@@ -33,6 +34,18 @@ const defaultSettings = () => ({
   showTotal: true, inclMasterSheet: true, skipCycleBOMs: false, sectionOnlyBMR: false,
   inclTechnical: false, inclFormulation: true, inclPacking: true, inclCOA: false, inclNano: false,
 })
+
+// recipe_db.qtyPerUnit is per 1 KG/L (canonical) of product — so scaleToQty's
+// multiplier must be the batch size in that same canonical magnitude, not
+// whatever unit the user picked. Entering "2 MT" must scale as 2000, not 2.
+function canonicalBatchSize(batchSize, batchSizeUom) {
+  const raw = parseFloat(batchSize) || 1
+  try {
+    return toCanonical(raw, batchSizeUom).qty
+  } catch {
+    return raw
+  }
+}
 
 export default function BomIssuance() {
   const [activeTab, setActiveTab] = useState('issue')
@@ -88,10 +101,10 @@ export default function BomIssuance() {
         sno: '', component: l.rmName, qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
       }))
       setActiveRecipe({ productCode, perUnit })
-      const bsz = parseFloat(form.batchSize) || 1
+      const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
       const scaled = scaleToQty(perUnit, bsz)
       setRows(prev => fromComponents(scaled, prev.length))
-      setRecipeLoadedMsg(`✓ Recipe loaded from Recipe Master · ${perUnit.length} components · scaled to ${bsz} ${form.batchSizeUom}`)
+      setRecipeLoadedMsg(`✓ Recipe loaded from Recipe Master · ${perUnit.length} components · scaled to ${form.batchSize} ${form.batchSizeUom}`)
     } catch (e) {
       setError('Failed to load recipe: ' + e.message)
     }
@@ -112,15 +125,21 @@ export default function BomIssuance() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.product, form.productCode, recipeProducts])
 
+  // Clear a stale "recipe loaded" message once the typed name no longer
+  // matches the product it came from (e.g. user edits the field afterward).
+  useEffect(() => {
+    if (!form.productCode) setRecipeLoadedMsg('')
+  }, [form.productCode])
+
   // Re-scale the loaded recipe whenever batch size changes
   useEffect(() => {
     if (!activeRecipe) return
-    const bsz = parseFloat(form.batchSize) || 1
+    const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
     const scaled = scaleToQty(activeRecipe.perUnit, bsz)
     setRows(prev => fromComponents(scaled, prev.length))
-    setRecipeLoadedMsg(`✓ Recipe scaled to ${bsz} ${form.batchSizeUom} (stored per 1 unit)`)
+    setRecipeLoadedMsg(`✓ Recipe scaled to ${form.batchSize} ${form.batchSizeUom} (stored per 1 unit)`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.batchSize])
+  }, [form.batchSize, form.batchSizeUom])
 
   const onGenerate = () => {
     setError('')

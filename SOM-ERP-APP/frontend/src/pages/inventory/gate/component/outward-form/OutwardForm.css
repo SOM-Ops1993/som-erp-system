@@ -7,6 +7,7 @@
   padding: 20px 24px;
   margin-bottom: 20px;
   box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
+  box-sizing: border-box;
 }
 
 .of-header {
@@ -14,10 +15,6 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 18px;
-}
-
-.of-header-icon {
-  font-size: 18px;
 }
 
 .of-title {
@@ -62,4 +59,19 @@
 .of-actions {
   display: flex;
   gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .of-wrap {
+    padding: 16px;
+  }
+
+  .of-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .of-actions > * {
+    flex: 1 1 auto;
+  }
 }

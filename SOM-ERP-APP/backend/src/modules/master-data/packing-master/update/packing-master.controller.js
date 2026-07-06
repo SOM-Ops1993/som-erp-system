@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toCanonical, normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 function parseNum(v) {
   if (v === '' || v == null) return null
@@ -20,6 +21,24 @@ export const updatePackingMaterial = async (req, res) => {
       ply, shape, color, laminate, contentsSpec, packCount, quantity, uom, notes,
     } = req.body
 
+    const capacityNum = parseNum(capacity)
+    let canonicalCapacity = capacityNum
+    let canonicalCapacityUnit = capacityUnit || null
+    if (capacityNum != null && capacityUnit) {
+      try {
+        const c = toCanonical(capacityNum, capacityUnit)
+        canonicalCapacity = c.qty
+        canonicalCapacityUnit = c.uom
+      } catch (e) {
+        return res.status(400).json({ success: false, error: `capacityUnit: ${e.message}`, code: 'VALIDATION_ERROR' })
+      }
+    }
+
+    const rawUom = uom || 'Nos'
+    const canonicalUom = normalizeUom(rawUom)
+    if (!CANONICAL_UNITS.includes(canonicalUom))
+      return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${rawUom}"`, code: 'VALIDATION_ERROR' })
+
     const item = await prisma.packingMaterial.update({
       where: { id },
       data: {
@@ -27,8 +46,8 @@ export const updatePackingMaterial = async (req, res) => {
         category,
         subType:      subType      || null,
         material:     material     || null,
-        capacity:     parseNum(capacity),
-        capacityUnit: capacityUnit || null,
+        capacity:     canonicalCapacity,
+        capacityUnit: canonicalCapacityUnit,
         length:       parseNum(length),
         width:        parseNum(width),
         height:       parseNum(height),
@@ -39,7 +58,7 @@ export const updatePackingMaterial = async (req, res) => {
         contentsSpec: contentsSpec || null,
         packCount:    parseInt2(packCount),
         quantity:     parseInt2(quantity) ?? 0,
-        uom:          uom          || 'Nos',
+        uom:          canonicalUom,
         notes:        notes        || null,
       },
     })

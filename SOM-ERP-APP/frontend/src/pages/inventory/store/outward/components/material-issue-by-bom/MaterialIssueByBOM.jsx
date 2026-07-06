@@ -10,7 +10,7 @@ import { readIssuedKeys, markIssued } from './issuedTasks.js'
 import './MaterialIssueByBOM.css'
 
 export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
-  // �"?�"? Step / product selection �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Step / product selection ──────────────────────────────────────────
   const [step, setStep]             = useState('select')
   const [products, setProducts]     = useState([])
   const [prodSearch, setProdSearch] = useState('')
@@ -28,13 +28,18 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   const [taskFilter,   setTaskFilter]   = useState({ plant: '', date: new Date().toISOString().slice(0, 10) })
   const [issuedKeys,   setIssuedKeys]   = useState(() => readIssuedKeys())
 
-  // �"?�"? Session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Session ──────────────────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState(null)
 
-  // �"?�"? BOM �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── BOM ──────────────────────────────────────────────────────────────────
   const [bomLines, setBomLines] = useState([])
+  // Set once per session-entry to whatever the live recipe_db looks like at
+  // that moment, compared against the frozen bomLines snapshot — surfaces
+  // recipe edits made *after* this session (or an old resumed session) was
+  // started, instead of silently showing outdated ingredients with no signal.
+  const [recipeDrift, setRecipeDrift] = useState(null) // { added, removed, changed, current } | null
 
-  // �"?�"? Issue panel �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Issue panel ─────────────────────────────────────────────────────────
   const [activeIdx, setActiveIdx]   = useState(null)
   // pre-loaded silently for scan matching (never shown as dropdowns)
   const [packs, setPacks]           = useState([])
@@ -114,7 +119,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     p.productCode?.toLowerCase().includes(prodSearch.toLowerCase())
   )
 
-  // �"?�"? Load BOM �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Load BOM ──────────────────────────────────────────────────────────────
   const loadBom = async () => {
     if (!selProduct || !batchQty || parseFloat(batchQty) <= 0) return
     setLoadingBom(true); setError('')
@@ -147,7 +152,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     finally { setLoadingBom(false) }
   }
 
-  // �"?�"? Resume session �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Resume session ───────────────────────────────────────────────────────
   const resumeSession = (s) => {
     setSelProduct({ productCode: s.productCode, productName: s.productName })
     setBatchQty(s.batchQty)
@@ -171,7 +176,73 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeSessionId])
 
-  // �"?�"? Load packs + containers silently (for scan matching only) �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Recipe drift detection ────────────────────────────────────────────────
+  // Runs once per session-entry (fresh load or resume), diffing the frozen
+  // bomLines snapshot against whatever recipe_db currently says for this
+  // product — catches both a resumed old session and a recipe edited out
+  // from under an active one.
+  useEffect(() => {
+    if (step !== 'bom' || !selProduct?.productCode) { setRecipeDrift(null); return }
+    let cancelled = false
+    recipeApi.list({ productCode: selProduct.productCode }).then(res => {
+      if (cancelled) return
+      const current = res.data || []
+      const currentByCode = new Map(current.map(r => [r.rmCode, r]))
+      const sessionCodes  = new Set(bomLines.map(l => l.rmCode))
+
+      const removed = bomLines.filter(l => !currentByCode.has(l.rmCode))
+      const added   = current.filter(r => !sessionCodes.has(r.rmCode))
+      const changed = bomLines.filter(l => {
+        const cur = currentByCode.get(l.rmCode)
+        return cur && (cur.rmName !== l.rmName || parseFloat(cur.qtyPerUnit) !== l.qtyPerUnit || (cur.uom || 'KG') !== l.uom)
+      })
+
+      setRecipeDrift(removed.length || added.length || changed.length ? { added, removed, changed, current } : null)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selProduct?.productCode, sessionId])
+
+  // Rebuilds bomLines from the live recipe: matching rmCode keeps its issued
+  // qty (and picks up the corrected name/qty/uom/role), new recipe rows are
+  // added at 0 issued, and rows dropped from the recipe are kept only if
+  // they already have real stock issued against them (flagged `orphaned`,
+  // for audit — never silently deleting an already-issued line) or else
+  // dropped entirely since there's nothing to reconcile.
+  const syncToCurrentRecipe = () => {
+    if (!recipeDrift) return
+    const { current } = recipeDrift
+    const batch = parseFloat(batchQty) || 0
+    const existingByCode = new Map(bomLines.map(l => [l.rmCode, l]))
+
+    const merged = current.map(r => {
+      const existing = existingByCode.get(r.rmCode)
+      return {
+        rmCode:     r.rmCode,
+        rmName:     r.rmName,
+        qtyPerUnit: parseFloat(r.qtyPerUnit),
+        required:   parseFloat((r.qtyPerUnit * batch).toFixed(3)),
+        issued:     existing?.issued || 0,
+        uom:        r.uom || 'KG',
+        roleType:   r.roleType || 'INGREDIENT',
+      }
+    })
+
+    const orphaned = bomLines
+      .filter(l => l.issued > 0 && !current.some(r => r.rmCode === l.rmCode))
+      .map(l => ({ ...l, orphaned: true }))
+
+    setBomLines([...merged, ...orphaned])
+    setRecipeDrift(null)
+
+    // A sync can itself complete the batch (e.g. every real line was already
+    // issued and the only drift was a since-removed, never-issued line) —
+    // there's no manual Delete button on the history page anymore, so a
+    // session left "fully issued" here would otherwise sit stuck forever.
+    if (merged.every(l => l.issued >= l.required - 0.001)) deleteSession(sessionId)
+  }
+
+  // ─── Load packs + containers silently (for scan matching only) ───────────
   const loadResources = useCallback(async (rmCode) => {
     setLoadingRes(true)
     setScanInput(''); setScanErr(''); setFoundSource(null); setIssueQty(''); setIssueError('')
@@ -197,7 +268,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     await loadResources(bomLines[idx].rmCode)
   }
 
-  // �"?�"? Unified scan handler �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Unified scan handler ────────────────────────────────────────────────
   const handleScan = useCallback((rawValue) => {
     const val = rawValue.trim()
     if (!val) return
@@ -240,7 +311,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     handleScan(value)
   }, [handleScan])
 
-  // �"?�"? Submit issue �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─── Submit issue ────────────────────────────────────────────────────────
   const submitIssue = async () => {
     const line = bomLines[activeIdx]
     const qty  = parseFloat(issueQty)
@@ -274,7 +345,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
       const remaining = parseFloat((line.required - newIssued).toFixed(3))
       if (remaining <= 0.001) {
         setActiveIdx(null)
-        if (updatedLines.every(l => l.issued >= l.required - 0.001)) deleteSession(sessionId)
+        if (updatedLines.filter(l => !l.orphaned).every(l => l.issued >= l.required - 0.001)) deleteSession(sessionId)
       } else {
         // More qty needed — reset scan, keep panel open
         setScanInput(''); setFoundSource(null); setScanErr(''); setIssueQty(String(remaining.toFixed(3)))
@@ -284,14 +355,16 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     finally { setIssuing(false) }
   }
 
-  // �"?�"? Derived �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
-  const totalRequired = bomLines.length
-  const totalDone     = bomLines.filter(l => l.issued >= l.required - 0.001).length
+  // ─── Derived ─────────────────────────────────────────────────────────────
+  // Orphaned lines (dropped from the recipe, kept only for audit) don't
+  // count toward progress — they're no longer part of what's required.
+  const activeLines   = bomLines.filter(l => !l.orphaned)
+  const totalRequired = activeLines.length
+  const totalDone     = activeLines.filter(l => l.issued >= l.required - 0.001).length
   const progress      = totalRequired > 0 ? Math.round((totalDone / totalRequired) * 100) : 0
 
-  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─────────────────────────────────────────────────────────────────────────
   // STEP: SELECT
-  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
 
 
   if (step === 'select') {
@@ -380,9 +453,9 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
     )
   }
 
-  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // ─────────────────────────────────────────────────────────────────────────
   // STEP: BOM checklist
-  // �"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?�"?
+  // STEP: BOM checklist
   return (
     <>
       {showScanner && (
@@ -423,11 +496,42 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
             style={{ width: `${progress}%` }} />
         </div>
 
+        {/* Recipe drift warning */}
+        {recipeDrift && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 mb-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-amber-800">Recipe has changed since this session started</p>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  {recipeDrift.removed.length > 0 && (
+                    <>Removed from recipe: <strong>{recipeDrift.removed.map(l => l.rmName).join(', ')}</strong>. </>
+                  )}
+                  {recipeDrift.added.length > 0 && (
+                    <>Added to recipe: <strong>{recipeDrift.added.map(r => r.rmName).join(', ')}</strong>. </>
+                  )}
+                  {recipeDrift.changed.length > 0 && (
+                    <>Updated: <strong>{recipeDrift.changed.map(l => l.rmName).join(', ')}</strong>. </>
+                  )}
+                </p>
+                {recipeDrift.removed.some(l => l.issued > 0) && (
+                  <p className="text-xs text-red-700 mt-1 font-semibold">
+                    ⚠ {recipeDrift.removed.filter(l => l.issued > 0).map(l => l.rmName).join(', ')} already has stock issued against it — syncing keeps it flagged for audit, it won't be deleted.
+                  </p>
+                )}
+              </div>
+              <button type="button" onClick={syncToCurrentRecipe}
+                className="shrink-0 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                Sync to Current Recipe
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Status matrix */}
-        {bomLines.length > 0 && (() => {
-          const pending   = bomLines.filter(l => l.issued <= 0).length
-          const partial   = bomLines.filter(l => l.issued > 0 && (l.required - l.issued) > 0.001).length
-          const complete  = bomLines.filter(l => (l.required - l.issued) <= 0.001).length
+        {activeLines.length > 0 && (() => {
+          const pending   = activeLines.filter(l => l.issued <= 0).length
+          const partial   = activeLines.filter(l => l.issued > 0 && (l.required - l.issued) > 0.001).length
+          const complete  = activeLines.filter(l => (l.required - l.issued) <= 0.001).length
           return (
             <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
               <div className="bg-gray-50 border border-gray-200 rounded-xl px-2 sm:px-4 py-3 text-center">
@@ -449,6 +553,24 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         {/* BOM rows */}
         <div className="space-y-2">
           {bomLines.map((line, idx) => {
+            if (line.orphaned) {
+              return (
+                <div key={`${line.rmCode}-${idx}`} className="border border-gray-200 bg-gray-50 rounded-xl px-4 py-3 flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">!</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-gray-500 text-sm line-through">{line.rmName}</span>
+                      <span className="text-xs font-mono text-gray-400">{line.rmCode}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-200 text-gray-600">No longer in recipe</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      Previously issued: <strong className="text-gray-700">{line.issued} {line.uom}</strong> — kept here for audit only.
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
             const remaining = Math.max(0, parseFloat((line.required - line.issued).toFixed(3)))
             const done      = remaining <= 0.001
             const partial   = line.issued > 0 && !done
@@ -469,7 +591,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
                     done    ? 'bg-green-500 text-white' :
                     partial ? 'bg-amber-400 text-white' :
                               'bg-gray-200 text-gray-600'
-                  }`}>{done ? '�o"' : idx + 1}</span>
+                  }`}>{done ? '✓' : idx + 1}</span>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -493,7 +615,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
                       )}
                     </div>
                     {lineMsg[idx] && (
-                      <p className="text-xs text-green-600 mt-0.5 font-medium">�o" {lineMsg[idx]}</p>
+                      <p className="text-xs text-green-600 mt-0.5 font-medium">✓ {lineMsg[idx]}</p>
                     )}
                   </div>
 
@@ -506,14 +628,14 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
                   {done ? (
                     <span className="text-xs font-bold text-green-600 px-2.5 py-1 bg-green-100 rounded-lg flex-shrink-0">
-                      Done �o"
+                      Done ✓
                     </span>
                   ) : (
                     <Button onClick={() => openIssuePanel(idx)}
                       variant={isActive ? 'secondary' : 'purple'}
                       size="xs"
                       className="flex-shrink-0">
-                      {isActive ? '→ Close' : partial ? 'Issue More' : 'Issue �?-'}
+                      {isActive ? '→ Close' : partial ? 'Issue More' : 'Issue →'}
                     </Button>
                   )}
                 </div>
@@ -555,7 +677,7 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
 
         {progress === 100 && (
           <div className="mt-5 bg-green-50 border border-green-200 rounded-xl p-5 text-center">
-            <p className="text-2xl mb-2">�YZ?</p>
+            <p className="text-2xl mb-2">🎉</p>
             <p className="font-bold text-green-800 text-lg">All Materials Issued!</p>
             <p className="text-sm text-green-600 mt-1">
               {selProduct?.productName} — {batchQty} KG batch ready for production

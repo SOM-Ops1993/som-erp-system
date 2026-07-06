@@ -130,6 +130,20 @@ export default function QRCodePreview({ results, onClose }) {
           #qr-print-root { display: block !important; }
           #qr-print-controls { display: none !important; }
         }
+        /* Labels are sized to match the physical printed label (283pt) —
+           shrinking them would misrepresent what actually prints, so on a
+           narrow screen we let the row scroll sideways instead. */
+        @media (max-width: 640px) {
+          #qr-print-root {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: 8px;
+          }
+          #qr-print-controls {
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+        }
       `}</style>
 
       {/* Overlay backdrop */}

@@ -24,7 +24,7 @@ export const APP_NAV = [
       { to: '/rm-master',        label: 'Item Master',     Icon: Layers },
       { to: '/product-master',   label: 'Product Master',  Icon: FlaskConical },
       { to: '/equipment-master', label: 'Plant Data',      Icon: Settings2 },
-      { to: '/employee-master',  label: 'Employee Data',   Icon: Users },
+      // { to: '/employee-master',  label: 'Employee Data',   Icon: Users },
       { to: '/recipe',           label: 'Recipe / BOM',    Icon: GitBranch },
       { to: '/microbes-master',  label: 'Microbes Master', Icon: Microscope },
     ],
@@ -33,7 +33,7 @@ export const APP_NAV = [
     group: 'GATE & SUPPLY CHAIN',
     items: [
       { to: '/gate',         label: 'Gate Entry', Icon: Truck },
-      { to: '/erp/microbial', label: 'Cold Room', Icon: Thermometer },
+      // { to: '/erp/microbial', label: 'Cold Room', Icon: Thermometer },
     ],
   },
   {

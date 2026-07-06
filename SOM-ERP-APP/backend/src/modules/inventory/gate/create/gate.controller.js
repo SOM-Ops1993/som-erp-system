@@ -1,8 +1,13 @@
 import prisma from '../../../../../config/db.js'
 
+
+
+// -------------------   Gate Inward create
+
 const createGateInward = async (req, res) => {
   try {
     const { supplier_name, invoice_no, vehicle_no } = req.body || {}
+
     if (!supplier_name?.trim())
       return res.status(400).json({ success: false, error: 'supplier_name is required', code: 'VALIDATION_ERROR' })
 
@@ -22,6 +27,8 @@ const createGateInward = async (req, res) => {
   }
 }
 
+/// -------------------   Gate Outward Create
+
 const createGateOutward = async (req, res) => {
   try {
     const { receiver_name, invoice_no, vehicle_no } = req.body || {}
@@ -35,7 +42,9 @@ const createGateOutward = async (req, res) => {
         createdBy:    req.user?.user_id     || null,
       },
     })
+
     return res.status(201).json({ success: true, data: row })
+
   } catch (err) {
     console.error('createGateOutward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

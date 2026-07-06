@@ -1,5 +1,6 @@
 ﻿import { Save, X } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
 import './RmForm.css'
 
 export default function RmForm({ editing, form, onChange, saving, msg, onSave, onClose }) {
@@ -42,7 +43,11 @@ export default function RmForm({ editing, form, onChange, saving, msg, onSave, o
                 onChange={e => onChange('uom', e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               >
-                {['KG', 'G', 'L', 'ML', 'NOS', 'MT', 'BAG'].map(u => <option key={u}>{u}</option>)}
+                {/* This item's tracking unit has no accompanying quantity to
+                    convert here — it's the canonical unit every future
+                    quantity for this item gets stored in, so only offer the
+                    3 the database actually stores. */}
+                {CANONICAL_UNITS.map(u => <option key={u}>{u}</option>)}
               </select>
             </div>
             <div>

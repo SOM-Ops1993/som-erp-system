@@ -1,6 +1,7 @@
 import prisma from '../../../../db.js'
 import { writeAudit, auditUser } from '../../../../middleware/audit.js'
 import { createNotification } from '../../../../services/notification-service.js'
+import { normalizeUom, toCanonical, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 // ── Items ─────────────────────────────────────────────────────────────────────
 
@@ -11,12 +12,18 @@ export const createItem = async (req, res) => {
     if (!item_code || !item_name || !item_category || !uom)
       return res.status(400).json({ success: false, error: 'item_code, item_name, item_category, uom required', code: 'VALIDATION_ERROR' })
 
+    // Item master's unit is its physical stock unit — must be a real
+    // KG/L/NOS quantity (not a special unit like CFU/g).
+    const canonicalUom = normalizeUom(uom)
+    if (!CANONICAL_UNITS.includes(canonicalUom))
+      return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
+
     const item = await prisma.erpItem.create({
       data: {
         itemCode: item_code,
         itemName: item_name,
         itemCategory: item_category,
-        uom,
+        uom: canonicalUom,
         warehouseZone: warehouse_zone || null,
         reorderLevel: reorder_level || 0,
         decantingTolerancePct: decanting_tolerance_pct || 0.5,
@@ -88,14 +95,28 @@ export const createErpEquipment = async (req, res) => {
     if (!equipment_name || !equipment_code || !equipment_type)
       return res.status(400).json({ success: false, error: 'equipment_name, equipment_code, equipment_type required', code: 'VALIDATION_ERROR' })
 
+    let canonicalWorkingVolume = working_volume || null
+    let canonicalWorkingVolumeUnit = working_volume_unit || 'KG'
+    if (working_volume) {
+      try {
+        const c = toCanonical(working_volume, canonicalWorkingVolumeUnit)
+        canonicalWorkingVolume = c.qty
+        canonicalWorkingVolumeUnit = c.uom
+      } catch (e) {
+        return res.status(400).json({ success: false, error: `working_volume_unit: ${e.message}`, code: 'VALIDATION_ERROR' })
+      }
+    } else {
+      canonicalWorkingVolumeUnit = normalizeUom(canonicalWorkingVolumeUnit) || 'KG'
+    }
+
     const row = await prisma.erpEquipment.create({
       data: {
         plantId: plant_id || null,
         equipmentName: equipment_name,
         equipmentCode: equipment_code,
         equipmentType: equipment_type,
-        workingVolume: working_volume || null,
-        workingVolumeUnit: working_volume_unit || 'KG',
+        workingVolume: canonicalWorkingVolume,
+        workingVolumeUnit: canonicalWorkingVolumeUnit,
         cleaningTimeHrs: cleaning_time_hrs || 0,
         requiresSterilisation: requires_sterilisation || false,
       },
@@ -165,27 +186,37 @@ export const createBom = async (req, res) => {
           notes: notes || null,
         },
       })
+      // Formulation lines can carry potency units (CFU/g) that pass through
+      // toCanonical() unchanged; packing lines are always a real KG/L/NOS
+      // quantity, so any special unit there is a genuine input error.
       if (formulation_lines.length) {
         await tx.erpBomLineFormulation.createMany({
-          data: formulation_lines.map(({ item_code, qty_per_unit, unit, is_critical }, i) => ({
-            bomId: newBom.bomId,
-            itemCode: item_code,
-            qtyPerUnit: qty_per_unit,
-            unit,
-            isCritical: is_critical || false,
-            seqNo: i + 1,
-          })),
+          data: formulation_lines.map(({ item_code, qty_per_unit, unit, is_critical }, i) => {
+            const c = toCanonical(qty_per_unit, unit)
+            return {
+              bomId: newBom.bomId,
+              itemCode: item_code,
+              qtyPerUnit: c.qty,
+              unit: c.uom,
+              isCritical: is_critical || false,
+              seqNo: i + 1,
+            }
+          }),
         })
       }
       if (packing_lines.length) {
         await tx.erpBomLinePacking.createMany({
-          data: packing_lines.map(({ item_code, qty_per_unit, unit }, i) => ({
-            bomId: newBom.bomId,
-            itemCode: item_code,
-            qtyPerUnit: qty_per_unit,
-            unit,
-            seqNo: i + 1,
-          })),
+          data: packing_lines.map(({ item_code, qty_per_unit, unit }, i) => {
+            const c = toCanonical(qty_per_unit, unit)
+            if (c.special) throw new Error(`Packing line for ${item_code}: "${unit}" is not a valid packing quantity unit`)
+            return {
+              bomId: newBom.bomId,
+              itemCode: item_code,
+              qtyPerUnit: c.qty,
+              unit: c.uom,
+              seqNo: i + 1,
+            }
+          }),
         })
       }
       return newBom
@@ -263,14 +294,26 @@ export const createErpContainer = async (req, res) => {
     if (!container_id || !item_code || !max_capacity)
       return res.status(400).json({ success: false, error: 'container_id, item_code, max_capacity required', code: 'VALIDATION_ERROR' })
 
+    let canonicalMaxCapacity = max_capacity
+    let canonicalUom = uom || null
+    if (uom) {
+      try {
+        const c = toCanonical(max_capacity, uom)
+        canonicalMaxCapacity = c.qty
+        canonicalUom = c.uom
+      } catch (e) {
+        return res.status(400).json({ success: false, error: `uom: ${e.message}`, code: 'VALIDATION_ERROR' })
+      }
+    }
+
     const row = await prisma.erpContainer.create({
       data: {
         containerId: container_id,
         containerQr: container_qr || container_id,
         itemCode: item_code,
         location: location || null,
-        maxCapacity: max_capacity,
-        uom: uom || null,
+        maxCapacity: canonicalMaxCapacity,
+        uom: canonicalUom,
         lowStockThreshold: low_stock_threshold || 0,
       },
     })

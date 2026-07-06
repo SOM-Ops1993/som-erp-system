@@ -37,7 +37,7 @@ export default function ContainerList() {
   const paginated = containers.slice((page - 1) * limit, page * limit);
 
   if (loading)
-    return <p className="text-gray-400 text-sm p-6">Loading containers�?�</p>;
+    return <p className="text-gray-400 text-sm p-6">Loading containers…</p>;
   if (error) return <p className="text-red-500 text-sm p-6">{error}</p>;
 
   if (containers.length === 0)

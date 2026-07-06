@@ -4,6 +4,7 @@ import { packsApi, rmApi, gateApi } from "../../../../../api/inventory.js";
 import { packingMaterialApi } from "../../../../../api/masters.js";
 import { Button, IconButton } from "../../../../../components/ui";
 import { getChips } from "../../../../masters/packing/components/packing-constants/packingConstants.jsx";
+import "./GenerateForm.css";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 
@@ -233,7 +234,7 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
       )}
 
       {/* Qty fields */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+      <div className="gf-qty-grid" style={{ marginBottom: "10px" }}>
         <div>
           <label style={lbl}>Number of Bags *</label>
           <input type="number" min="1"
@@ -255,7 +256,7 @@ function ItemLine({ idx, item, rmList, pmList, onChange, onRemove, canRemove }) 
       {/* Customer batch code (optional) */}
       <div>
         <label style={{ ...lbl, color: "#6b7280" }}>
-          Customer Batch Code
+          Supplier Batch Code
           <span style={{ fontWeight: 400, fontSize: "11px", marginLeft: "4px", color: "#9ca3af" }}>(optional)</span>
         </label>
         <input
@@ -373,7 +374,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
   };
 
   return (
-    <div style={{ background: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "22px" }}>
+    <div className="gf-wrap">
       <h2 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>
         Generate Pack Labels
       </h2>
@@ -409,7 +410,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
           <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Invoice Details
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+          <div className="gf-hdr-grid">
             <div style={{ minWidth: 0 }}>
               <label style={lbl}>Supplier</label>
               <input value={hdr.supplier} onChange={e => setH("supplier", e.target.value)} placeholder="Supplier name" style={inp} />

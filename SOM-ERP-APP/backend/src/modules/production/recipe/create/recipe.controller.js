@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toCanonical } from '../../../../utils/uom.js'
 
 export const bulkSaveRecipe = async (req, res) => {
   try {
@@ -8,10 +9,18 @@ export const bulkSaveRecipe = async (req, res) => {
     if (!valid.length) return res.status(400).json({ success: false, error: 'No valid rows found', code: 'VALIDATION_ERROR' })
     let saved = 0
     for (const r of valid) {
+      // CFU/g-style potency rows pass through unchanged; everything else
+      // (kg/g/mg/L/ml/...) converts to the canonical KG/L before saving.
+      let canonical
+      try {
+        canonical = toCanonical(parseFloat(r.qtyPerUnit), r.uom)
+      } catch (e) {
+        return res.status(400).json({ success: false, error: `Row for ${r.rmName}: ${e.message}`, code: 'VALIDATION_ERROR' })
+      }
       await prisma.recipeDb.upsert({
         where: { productCode_rmCode: { productCode: r.productCode, rmCode: r.rmCode } },
-        create: { productCode: r.productCode, productName: r.productName, rmCode: r.rmCode, rmName: r.rmName, qtyPerUnit: parseFloat(r.qtyPerUnit), uom: r.uom, roleType: r.roleType || 'INGREDIENT' },
-        update: { productName: r.productName, rmName: r.rmName, qtyPerUnit: parseFloat(r.qtyPerUnit), uom: r.uom, roleType: r.roleType || 'INGREDIENT' }
+        create: { productCode: r.productCode, productName: r.productName, rmCode: r.rmCode, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' },
+        update: { productName: r.productName, rmName: r.rmName, qtyPerUnit: canonical.qty, uom: canonical.uom, roleType: r.roleType || 'INGREDIENT' }
       })
       saved++
     }

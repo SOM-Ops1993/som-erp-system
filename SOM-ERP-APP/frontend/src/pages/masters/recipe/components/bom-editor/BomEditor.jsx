@@ -10,16 +10,20 @@ const ROLE_TYPE_STYLE = {
   MICROBE:    'bg-emerald-100 text-emerald-700',
 }
 
-export default function BomEditor({ selectedProduct, bomRows, rmList, saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow, onImportClick }) {
+export default function BomEditor({ selectedProduct, bomRows, loadId, rmList, saving, msg, onAddRow, onSaveAll, onUpdateRow, onSelectRm, onRemoveRow, onImportClick }) {
   const [rmDropIdx, setRmDropIdx] = useState(null)
   const [rmSearch, setRmSearch]   = useState({})
 
-  // Re-initialize search values when product/rows change
+  // Re-initialize search values once bomRows actually holds the newly
+  // fetched product's rows (loadId), not on selectedProduct.productCode —
+  // that changes synchronously on click, before the async fetch resolves,
+  // which used to seed this from the *previous* product's still-current
+  // bomRows and leave stale item names displayed over the new codes/qty.
   useEffect(() => {
     const map = {}
     bomRows.forEach((r, i) => { map[i] = r.rmName || '' })
     setRmSearch(map)
-  }, [selectedProduct?.productCode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filteredRm = (search) =>
     rmList.filter(r => !search ||

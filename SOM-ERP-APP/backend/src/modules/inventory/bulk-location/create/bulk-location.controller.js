@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 const nextBulkLotNo = async (itemCode) => {
   const year = new Date().getFullYear()
@@ -21,7 +22,10 @@ export const createLocation = async (req, res) => {
       return res.status(400).json({ success: false, error: 'locationId, locationName, itemCode, itemName required', code: 'VALIDATION_ERROR' })
     const existing = await prisma.bulkLocation.findUnique({ where: { locationId } })
     if (existing) return res.status(409).json({ success: false, error: 'Location ID already exists', code: 'CONFLICT' })
-    const loc = await prisma.bulkLocation.create({ data: { locationId, locationName, itemCode, itemName, uom: uom || 'KG' } })
+    const canonicalUom = uom ? normalizeUom(uom) : 'KG'
+    if (!CANONICAL_UNITS.includes(canonicalUom))
+      return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${uom}"`, code: 'VALIDATION_ERROR' })
+    const loc = await prisma.bulkLocation.create({ data: { locationId, locationName, itemCode, itemName, uom: canonicalUom } })
     return res.status(201).json({ success: true, data: loc })
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })

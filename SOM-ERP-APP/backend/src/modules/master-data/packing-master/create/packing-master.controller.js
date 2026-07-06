@@ -1,4 +1,5 @@
 import prisma from '../../../../db.js'
+import { toCanonical, normalizeUom, CANONICAL_UNITS } from '../../../../utils/uom.js'
 
 const PREFIX = {
   BOTTLES_TINS:      'BTL',
@@ -42,6 +43,27 @@ export const createPackingMaterial = async (req, res) => {
 
     const itemCode = await generateItemCode(category)
 
+    // `capacity`/`capacityUnit` (a single unit's size, e.g. a 500 mL bottle)
+    // and `quantity`/`uom` (the stock count) are two independent
+    // measurements — each converts to its own canonical unit.
+    const capacityNum = parseNum(capacity)
+    let canonicalCapacity = capacityNum
+    let canonicalCapacityUnit = capacityUnit || null
+    if (capacityNum != null && capacityUnit) {
+      try {
+        const c = toCanonical(capacityNum, capacityUnit)
+        canonicalCapacity = c.qty
+        canonicalCapacityUnit = c.uom
+      } catch (e) {
+        return res.status(400).json({ success: false, error: `capacityUnit: ${e.message}`, code: 'VALIDATION_ERROR' })
+      }
+    }
+
+    const rawUom = uom || 'Nos'
+    const canonicalUom = normalizeUom(rawUom)
+    if (!CANONICAL_UNITS.includes(canonicalUom))
+      return res.status(400).json({ success: false, error: `uom must convert to one of ${CANONICAL_UNITS.join(', ')} — got "${rawUom}"`, code: 'VALIDATION_ERROR' })
+
     const item = await prisma.packingMaterial.create({
       data: {
         itemCode,
@@ -49,8 +71,8 @@ export const createPackingMaterial = async (req, res) => {
         category,
         subType:      subType      || null,
         material:     material     || null,
-        capacity:     parseNum(capacity),
-        capacityUnit: capacityUnit || null,
+        capacity:     canonicalCapacity,
+        capacityUnit: canonicalCapacityUnit,
         length:       parseNum(length),
         width:        parseNum(width),
         height:       parseNum(height),
@@ -61,7 +83,7 @@ export const createPackingMaterial = async (req, res) => {
         contentsSpec: contentsSpec || null,
         packCount:    parseInt2(packCount),
         quantity:     parseInt2(quantity) ?? 0,
-        uom:          uom          || 'Nos',
+        uom:          canonicalUom,
         notes:        notes        || null,
       },
     })

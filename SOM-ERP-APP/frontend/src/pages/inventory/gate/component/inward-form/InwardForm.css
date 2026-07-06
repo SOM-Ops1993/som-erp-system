@@ -7,6 +7,7 @@
   padding: 20px 24px;
   margin-bottom: 20px;
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
+  box-sizing: border-box;
 }
 
 .if-header {
@@ -14,10 +15,6 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 18px;
-}
-
-.if-header-icon {
-  font-size: 18px;
 }
 
 .if-title {
@@ -62,4 +59,21 @@
 .if-actions {
   display: flex;
   gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .if-wrap {
+    padding: 16px;
+  }
+
+  /* Supplier Name / Invoice No. / Vehicle No. were being squeezed into three
+     tiny columns on a phone — stack them full-width instead. */
+  .if-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .if-actions > * {
+    flex: 1 1 auto;
+  }
 }

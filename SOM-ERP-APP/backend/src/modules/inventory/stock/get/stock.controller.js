@@ -1,8 +1,9 @@
 import prisma from '../../../../db.js'
 
-export const listStock = async (req, res) => {
+
+const listStock = async (req, res) => {
+  const { search } = req.query
   try {
-    const { search } = req.query
     const rms = await prisma.rmMaster.findMany({
       where: search ? { OR: [
         { itemCode: { contains: search, mode: 'insensitive' } },
@@ -33,7 +34,7 @@ export const listStock = async (req, res) => {
   }
 }
 
-export const listContainers = async (req, res) => {
+const listContainers = async (req, res) => {
   try {
     const containers = await prisma.containerMaster.findMany({ orderBy: { itemName: 'asc' } })
     return res.json({ success: true, data: containers })
@@ -42,7 +43,7 @@ export const listContainers = async (req, res) => {
   }
 }
 
-export const getItemStock = async (req, res) => {
+const getItemStock = async (req, res) => {
   try {
     const rm = await prisma.rmMaster.findUnique({ where: { itemCode: req.params.itemCode } })
     if (!rm) return res.status(404).json({ success: false, error: 'Item not found', code: 'NOT_FOUND' })
@@ -55,7 +56,7 @@ export const getItemStock = async (req, res) => {
   }
 }
 
-export const getRmHistory = async (req, res) => {
+const getRmHistory = async (req, res) => {
   try {
     const { itemCode } = req.params
     const [rm, packs, balances] = await Promise.all([
@@ -86,7 +87,7 @@ function periodStart(period) {
   return null
 }
 
-export const getDashboardStats = async (req, res) => {
+const getDashboardStats = async (req, res) => {
   try {
     const { period = 'month' } = req.query
     const from = periodStart(period)
@@ -226,7 +227,18 @@ export const getDashboardStats = async (req, res) => {
         },
       },
     })
+
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
+}
+
+
+
+export {
+  listStock,
+  listContainers,
+  getItemStock,
+  getRmHistory,
+  getDashboardStats
 }

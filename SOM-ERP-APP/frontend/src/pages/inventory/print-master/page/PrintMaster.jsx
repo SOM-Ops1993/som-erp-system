@@ -24,10 +24,10 @@ export default function PrintMaster() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Print Master — Generate Pack Labels</h1>
-        <div className="flex items-center gap-2">
+    <div className="p-4 md:p-6">
+      <div className="flex justify-between items-center gap-3 flex-wrap mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900">Print Master — Generate Pack Labels</h1>
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline-gray"
             icon={ArrowLeftRight}
@@ -37,7 +37,8 @@ export default function PrintMaster() {
           <Button variant="primary" onClick={() => navigate("/print-master/entries")}>
             Entries
           </Button>
-          <BackButton />
+          {/* Real router back — mobile has the native back gesture for this */}
+          <span className="hidden md:inline-flex"><BackButton /></span>
         </div>
       </div>
 

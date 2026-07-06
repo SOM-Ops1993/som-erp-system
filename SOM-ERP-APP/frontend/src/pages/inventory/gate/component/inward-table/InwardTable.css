@@ -9,8 +9,8 @@
 }
 
 .it-empty-icon {
-  font-size: 40px;
   margin-bottom: 10px;
+  color: #cbd5e1;
 }
 
 .it-empty-title {
@@ -39,6 +39,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .it-toolbar-title {
@@ -54,6 +56,7 @@
   border-radius: 99px;
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .it-scroll {
@@ -145,4 +148,18 @@
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .it-empty {
+    padding: 40px 16px;
+  }
+
+  .it-toolbar {
+    padding: 12px 14px;
+  }
+
+  .it-pagination {
+    padding: 8px 10px;
+  }
 }

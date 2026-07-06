@@ -1,6 +1,8 @@
 import prisma from '../../../../db.js'
 
-export const listGateInward = async (req, res) => {
+/// -------------------   Gate Inward list and get
+
+const listGateInward = async (req, res) => {
   try {
     const { search, status, from_date, to_date, invoice_no, limit = '50', offset = '0' } = req.query
     const lim = Math.min(Number(limit) || 50, 200)
@@ -34,19 +36,30 @@ export const listGateInward = async (req, res) => {
   }
 }
 
-export const getGateInward = async (req, res) => {
+
+// -------------------   Gate Inward get
+
+const getGateInward = async (req, res) => {
+
+  const { id } = req.params
   try {
-    const row = await prisma.gateInward.findUnique({ where: { inwardId: req.params.id } })
+
+    const row = await prisma.gateInward.findUnique({ where: { inwardId: id } })
     if (!row) return res.status(404).json({ success: false, error: 'Gate inward not found', code: 'NOT_FOUND' })
     return res.json({ success: true, data: row })
+    
   } catch (err) {
     console.error('getGateInward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }
 
-export const listGateOutward = async (req, res) => {
+
+// -------------------   Gate Outward list and get
+
+const listGateOutward = async (req, res) => {
   try {
+
     const { search, status, from_date, to_date, invoice_no, limit = '50', offset = '0' } = req.query
     const lim = Math.min(Number(limit) || 50, 200)
     const off = Number(offset) || 0
@@ -73,19 +86,36 @@ export const listGateOutward = async (req, res) => {
     ])
 
     return res.json({ success: true, data: rows, total })
+
   } catch (err) {
     console.error('listGateOutward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
 }
 
-export const getGateOutward = async (req, res) => {
-  try {
-    const row = await prisma.gateOutward.findUnique({ where: { outwardId: req.params.id } })
-    if (!row) return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
+
+/// -------------------   Gate Outward get
+
+const getGateOutward = async (req, res) => {
+  const { id } = req.params
+  try { 
+
+    const row = await prisma.gateOutward.findUnique({ where: { outwardId: id } })
+    if (!row)
+      return res.status(404).json({ success: false, error: 'Gate outward not found', code: 'NOT_FOUND' })
+    
     return res.json({ success: true, data: row })
+    
   } catch (err) {
     console.error('getGateOutward error:', err.message)
     return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
   }
+}
+
+
+export {
+  listGateInward,
+  getGateInward,
+  listGateOutward,
+  getGateOutward
 }

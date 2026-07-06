@@ -25,6 +25,12 @@ export default function RecipeDB() {
   const [importModal, setImportModal]     = useState(false)
   const [reconcileModal, setReconcileModal] = useState(false)
 
+  // Bumped only once bomRows actually holds the freshly-fetched product's
+  // rows — BomEditor's item-name seeding effect keys off this instead of
+  // selectedProduct.productCode, which changes synchronously on click, well
+  // before the async recipeApi.list() call below resolves.
+  const [loadId, setLoadId] = useState(0)
+
   useEffect(() => { loadAll() }, [])
 
   const loadAll = async () => {
@@ -45,6 +51,7 @@ export default function RecipeDB() {
       const res  = await recipeApi.list({ productCode: prod.productCode })
       const data = res.data || []
       setBomRows(data.length > 0 ? data.map(r => ({ ...r, _dirty: false })) : [EMPTY_ROW()])
+      setLoadId(id => id + 1)
     } catch (e) { setMsg({ type: 'error', text: e.message }) }
   }
 
@@ -132,6 +139,7 @@ export default function RecipeDB() {
         <BomEditor
           selectedProduct={selectedProduct}
           bomRows={bomRows}
+          loadId={loadId}
           rmList={rmList}
           saving={saving}
           msg={msg}

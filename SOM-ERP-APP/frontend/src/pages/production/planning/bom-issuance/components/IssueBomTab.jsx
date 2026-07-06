@@ -132,6 +132,14 @@ export default function IssueBomTab({
             {recipeLoadedMsg && (
               <p className="text-[12px] text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 mt-1.5">{recipeLoadedMsg}</p>
             )}
+            {/* No recipe matched what's typed — without this, an unmatched
+                name (typo, or a product with no BOM in Recipe Master yet)
+                silently leaves the components table empty with no clue why. */}
+            {!recipeLoadedMsg && !form.productCode && form.product.trim() && productSuggestions.length === 0 && (
+              <p className="text-[12px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mt-1.5">
+                ⚠ No recipe found matching "{form.product.trim()}" in the Recipe Master — check the spelling, or add its BOM in the Recipe Library tab first.
+              </p>
+            )}
           </div>
 
           <Field label="DI Number">

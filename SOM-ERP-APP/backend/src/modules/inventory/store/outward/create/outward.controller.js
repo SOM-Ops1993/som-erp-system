@@ -1,6 +1,6 @@
 import prisma from '../../../../../db.js'
 
-export const bomScan = async (req, res) => {
+const bomScan = async (req, res) => {
   const { indentId, rmCode, packId } = req.body
   if (!indentId || !rmCode || !packId)
     return res.status(400).json({ success: false, error: 'indentId, rmCode, packId required', code: 'VALIDATION_ERROR' })
@@ -12,7 +12,7 @@ export const bomScan = async (req, res) => {
   }
 }
 
-export const bomManual = async (req, res) => {
+const bomManual = async (req, res) => {
   const { indentId, rmCode, packId, qtyToIssue } = req.body
   if (!indentId || !rmCode || !packId || !qtyToIssue)
     return res.status(400).json({ success: false, error: 'indentId, rmCode, packId, qtyToIssue required', code: 'VALIDATION_ERROR' })
@@ -24,7 +24,7 @@ export const bomManual = async (req, res) => {
   }
 }
 
-export const packReduction = async (req, res) => {
+const packReduction = async (req, res) => {
   const { packId, qty } = req.body
   if (!packId || !qty) return res.status(400).json({ success: false, error: 'packId and qty required', code: 'VALIDATION_ERROR' })
   try {
@@ -53,7 +53,7 @@ export const packReduction = async (req, res) => {
   }
 }
 
-export const bagLossAdjustment = async (req, res) => {
+const bagLossAdjustment = async (req, res) => {
   const { packId, lossQty, reason } = req.body
   if (!packId || !lossQty || !reason || reason.trim().length < 3)
     return res.status(400).json({ success: false, error: 'packId, lossQty, and reason (min 3 chars) required', code: 'VALIDATION_ERROR' })
@@ -95,7 +95,7 @@ export const bagLossAdjustment = async (req, res) => {
   }
 }
 
-export const stockAdjustment = async (req, res) => {
+const stockAdjustment = async (req, res) => {
   const { itemCode, adjustmentQty, remarks } = req.body
   if (!itemCode || adjustmentQty === undefined || !remarks || remarks.length < 5)
     return res.status(400).json({ success: false, error: 'itemCode, adjustmentQty, and remarks (min 5 chars) required', code: 'VALIDATION_ERROR' })
@@ -116,7 +116,7 @@ export const stockAdjustment = async (req, res) => {
   }
 }
 
-export const warehouseTransfer = async (req, res) => {
+const warehouseTransfer = async (req, res) => {
   const { packId, fromWarehouse, toWarehouse, remarks } = req.body
   if (!packId || !toWarehouse)
     return res.status(400).json({ success: false, error: 'packId and toWarehouse required', code: 'VALIDATION_ERROR' })
@@ -141,7 +141,7 @@ export const warehouseTransfer = async (req, res) => {
   }
 }
 
-export const directIssue = async (req, res) => {
+const directIssue = async (req, res) => {
   const { packId, qty, plant, remarks } = req.body
   if (!packId || !qty || !plant)
     return res.status(400).json({ success: false, error: 'packId, qty, plant required', code: 'VALIDATION_ERROR' })
@@ -173,7 +173,7 @@ export const directIssue = async (req, res) => {
   }
 }
 
-export const bomDirectIssue = async (req, res) => {
+const bomDirectIssue = async (req, res) => {
   const { source, sourceId, qty, rmCode, productCode, productName, batchSize, batchRef } = req.body
   if (!source || !sourceId || !qty || !rmCode)
     return res.status(400).json({ success: false, error: 'source, sourceId, qty, rmCode required', code: 'VALIDATION_ERROR' })
@@ -260,4 +260,16 @@ const _issuePack = async ({ indentId, rmCode, packId, forcedQty }) => {
   })
 
   return { success: true, deducted: deduct, remaining: detail.balanceQty - deduct }
+}
+
+
+export {
+  bomScan,
+  bomManual,
+  packReduction,
+  bagLossAdjustment,
+  stockAdjustment,
+  warehouseTransfer,
+  directIssue,
+  bomDirectIssue
 }

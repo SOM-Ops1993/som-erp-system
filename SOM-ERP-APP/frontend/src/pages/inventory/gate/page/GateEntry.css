@@ -4,12 +4,15 @@
   padding: 24px 28px;
   background: #f1f5f9;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .ge-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -19,6 +22,9 @@
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .ge-subtitle {
@@ -30,7 +36,29 @@
 .ge-btn-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+/* display: contents so this wrapper doesn't add an extra flex item —
+   BackButton itself still behaves as a direct child of .ge-btn-row.
+   Overridden to display: none on mobile, see below. */
+.ge-back-routable {
+  display: contents;
+}
+
+.ge-success {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ge-loading {
@@ -51,4 +79,32 @@
   color: #dc2626;
   font-size: 13px;
   margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .ge-page {
+    padding: 16px;
+  }
+
+  .ge-title {
+    font-size: 20px;
+  }
+
+  /* Inward/Outward Entries + Back would otherwise overflow off-screen
+     shoulder-to-shoulder on a phone — let them wrap and go full width. */
+  .ge-btn-row {
+    width: 100%;
+  }
+
+  .ge-btn-row > * {
+    flex: 1 1 auto;
+  }
+
+  /* Only the home screen's Back does a real router navigate(-1) — the
+     phone's native back gesture already covers that, so hide it there.
+     The list-view Back buttons switch a local view state instead (no URL
+     change), so they stay visible everywhere — see GateEntry.jsx. */
+  .ge-back-routable {
+    display: none;
+  }
 }

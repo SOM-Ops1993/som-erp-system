@@ -91,22 +91,23 @@ export default function ReturnMaterial() {
       )}
 
       {/* Page header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center gap-3 mb-1">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4">
+        {/* Real router back — mobile has the native back gesture for this */}
+        <div className="hidden md:flex items-center gap-3 mb-1">
           <BackButton onClick={() => navigate('/print-master')} label="Print Master" size="sm" />
         </div>
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-0 md:mt-3">
           <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
             <ArrowLeftRight size={22} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Return Material — Plant to Warehouse</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Generate QR labels for raw materials being sent back from plant</p>
+            <h1 className="text-lg md:text-xl font-bold text-gray-900">Return Material — Plant to Warehouse</h1>
+            <p className="hidden md:block text-sm text-gray-500 mt-0.5">Generate QR labels for raw materials being sent back from plant</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-4 py-6 md:px-6 md:py-8">
 
         {/* How it works */}
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl px-5 py-4">
@@ -131,7 +132,7 @@ export default function ReturnMaterial() {
             <p className="text-xs text-green-600 mb-4">
               {result.packs?.length} packs × {perPackQty} {selectedRm?.uom} = {totalQty.toFixed(3)} {selectedRm?.uom} total
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <Button icon={QrCode} variant="primary" onClick={() => setShowQR(true)}>
                 Show QR Labels
               </Button>
@@ -152,7 +153,7 @@ export default function ReturnMaterial() {
         {/* Form */}
         {!result && (
           <form onSubmit={handleSubmit}
-            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-5">
+            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-6 space-y-5">
 
             {/* RM search */}
             <div>
@@ -193,7 +194,7 @@ export default function ReturnMaterial() {
             </div>
 
             {/* Qty per pack + number of packs */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Qty per Pack ({selectedRm?.uom || 'KG'}) *
@@ -229,7 +230,7 @@ export default function ReturnMaterial() {
             )}
 
             {/* Plant + Returned by */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Plant <span className="font-normal text-gray-400">(optional)</span>

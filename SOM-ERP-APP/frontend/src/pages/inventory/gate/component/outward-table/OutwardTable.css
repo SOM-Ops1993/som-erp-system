@@ -39,6 +39,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .ot-toolbar-title {
@@ -138,4 +140,18 @@
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .ot-empty {
+    padding: 40px 16px;
+  }
+
+  .ot-toolbar {
+    padding: 12px 14px;
+  }
+
+  .ot-pagination {
+    padding: 8px 10px;
+  }
 }

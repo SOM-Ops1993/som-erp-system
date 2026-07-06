@@ -1,5 +1,6 @@
 ﻿import { Check, X } from 'lucide-react'
 import { Button } from '../../../../../components/ui'
+import { CANONICAL_UNITS } from '../../../../../utils/uom.js'
 
 export default function LocationForm({ msg, form, onChange, rmSearch, setRmSearch, showRmDrop, setShowRmDrop, rmOptions, saving, onSelectRm, onSave, onClose }) {
   return (
@@ -76,7 +77,10 @@ export default function LocationForm({ msg, form, onChange, rmSearch, setRmSearc
               onChange={e => onChange('uom', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
             >
-              {['KG', 'G', 'NOS', 'BAG', 'MT', 'L', 'ML'].map(u => <option key={u}>{u}</option>)}
+              {/* No accompanying quantity on this form to convert — this is
+                  the canonical unit every lot entry at this location gets
+                  stored in, so only offer the 3 the database stores. */}
+              {CANONICAL_UNITS.map(u => <option key={u}>{u}</option>)}
             </select>
           </div>
         </div>

@@ -1,27 +1,10 @@
-﻿import { IconButton } from "../../../../../components/ui";
+import { IconButton } from "../../../../../components/ui";
 import { X } from "lucide-react";
-
-const STATUS_STYLE = {
-  pending:  { bg: "#fef3c7", color: "#92400e", border: "#fde68a" },
-  approved: { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
-  rejected: { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-};
+import "./InwardDetailPanel.css";
 
 function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] || STATUS_STYLE.pending;
   return (
-    <span
-      style={{
-        padding: "4px 12px",
-        background: s.bg,
-        color: s.color,
-        border: `1px solid ${s.border}`,
-        borderRadius: "99px",
-        fontSize: "12px",
-        fontWeight: 700,
-        textTransform: "capitalize",
-      }}
-    >
+    <span className={`idp-badge idp-badge--${status || "pending"}`}>
       {status}
     </span>
   );
@@ -36,46 +19,16 @@ export default function InwardDetailPanel({ detail, onClose }) {
   const status       = d.status        || "pending";
 
   return (
-    <div
-      style={{
-        background: "#fff",
-        borderRadius: "12px",
-        border: "1.5px solid #6366f1",
-        padding: "20px 24px",
-        marginBottom: "20px",
-        boxShadow: "0 4px 16px rgba(99,102,241,0.08)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
+    <div className="idp-wrap">
+      <div className="idp-header">
         <div>
-          <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>
-            Inward Detail
-          </h3>
-          <p style={{ margin: "3px 0 0", fontSize: "13px", color: "#64748b" }}>
-            {supplierName}
-          </p>
+          <h3 className="idp-title">Inward Detail</h3>
+          <p className="idp-sub">{supplierName}</p>
         </div>
         <IconButton icon={X} tooltip="Close" onClick={onClose} />
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "16px",
-          padding: "16px",
-          background: "#f8fafc",
-          borderRadius: "10px",
-          border: "1px solid #e2e8f0",
-        }}
-      >
+      <div className="idp-grid">
         {[
           ["Supplier",   supplierName],
           ["Invoice No.", invoiceNo],
@@ -84,19 +37,8 @@ export default function InwardDetailPanel({ detail, onClose }) {
           ["Status",     <StatusBadge status={status} />],
         ].map(([label, value]) => (
           <div key={label}>
-            <div
-              style={{
-                fontSize: "10px",
-                color: "#94a3b8",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: "6px",
-              }}
-            >
-              {label}
-            </div>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "#1e293b" }}>{value}</div>
+            <div className="idp-field-label">{label}</div>
+            <div className="idp-field-value">{value}</div>
           </div>
         ))}
       </div>

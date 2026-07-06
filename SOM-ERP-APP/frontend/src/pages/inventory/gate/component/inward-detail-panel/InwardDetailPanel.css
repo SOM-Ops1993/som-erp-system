@@ -7,12 +7,14 @@
   padding: 20px 24px;
   margin-bottom: 20px;
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+  box-sizing: border-box;
 }
 
 .idp-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
@@ -66,3 +68,14 @@
 .idp-badge--pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .idp-badge--approved { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 .idp-badge--rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+@media (max-width: 640px) {
+  .idp-wrap {
+    padding: 16px;
+  }
+
+  .idp-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
