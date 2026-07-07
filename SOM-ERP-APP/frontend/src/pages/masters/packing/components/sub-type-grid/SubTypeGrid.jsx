@@ -14,7 +14,7 @@ export default function SubTypeGrid({ catMeta, catCounts, subCounts, onBack, onA
       <div className="flex items-center justify-between mb-7">
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <span>{catMeta.icon}</span>{catMeta.label}
+            <catMeta.icon size={20} className={catMeta.cls.text} />{catMeta.label}
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">
             {catCounts[catMeta.value] || 0} materials · choose a type to view items
@@ -42,7 +42,9 @@ export default function SubTypeGrid({ catMeta, catCounts, subCounts, onBack, onA
               }`}
             >
               {active && <div className={`absolute top-3 right-3 w-2 h-2 rounded-full ${catMeta.cls.header}`} />}
-              <div className="text-3xl mb-2.5">{sub.icon}</div>
+              <div className={`flex justify-center mb-2.5 ${active ? catMeta.cls.text : 'text-gray-300'}`}>
+                <sub.icon size={30} strokeWidth={1.6} />
+              </div>
               <div className="text-sm font-bold text-gray-800">{sub.value}</div>
               <div className={`text-xs font-semibold mt-1.5 ${active ? catMeta.cls.text : 'text-gray-300'}`}>
                 {count} item{count !== 1 ? 's' : ''}

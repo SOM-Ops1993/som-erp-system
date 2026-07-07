@@ -22,6 +22,42 @@ export const listOutward = async (req, res) => {
   }
 }
 
+// Single-pack lookup by packId (as scanned from the pack's QR code) — combines
+// printMaster (identity), packBalance (remaining qty) and the pack's most
+// recent inward row (current warehouse) in one call. Used by Warehouse
+// Transfer instead of guessing an RM code out of the packId string and
+// fetching the wrong item's "available packs" list.
+export const getPackDetail = async (req, res) => {
+  try {
+    const { packId } = req.params
+    const [printMaster, packBalance, inwardRow] = await Promise.all([
+      prisma.printMaster.findUnique({ where: { packId } }),
+      prisma.packBalance.findUnique({ where: { packId } }),
+      prisma.inward.findFirst({ where: { packId }, orderBy: { inwardTime: 'desc' } }),
+    ])
+    if (!printMaster || !packBalance) {
+      return res.status(404).json({ success: false, error: `Pack "${packId}" not found or not inwarded`, code: 'NOT_FOUND' })
+    }
+    return res.json({
+      success: true,
+      data: {
+        packId,
+        itemCode: printMaster.itemCode,
+        itemName: printMaster.itemName,
+        lotNo: printMaster.lotNo,
+        bagNo: printMaster.bagNo,
+        uom: printMaster.uom,
+        supplier: printMaster.supplier || '',
+        totalQty: packBalance.totalQty,
+        remainingQty: packBalance.remainingQty,
+        warehouse: inwardRow?.warehouse || '',
+      },
+    })
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message, code: 'INTERNAL_ERROR' })
+  }
+}
+
 export const getAvailablePacks = async (req, res) => {
   try {
     const packs = await prisma.packBalance.findMany({

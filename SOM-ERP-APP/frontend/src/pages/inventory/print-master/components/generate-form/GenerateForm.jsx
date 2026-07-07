@@ -3,7 +3,18 @@ import { X } from "lucide-react";
 import { packsApi, rmApi, gateApi } from "../../../../../api/inventory.js";
 import { packingMaterialApi } from "../../../../../api/masters.js";
 import { Button, IconButton } from "../../../../../components/ui";
-import { getChips } from "../../../../masters/packing/components/packing-constants/packingConstants.jsx";
+import { getChips, SUB_TYPES } from "../../../../masters/packing/components/packing-constants/packingConstants.jsx";
+
+// Packing Material Master's own browsing UI (CategoryList/SubTypeGrid) only
+// renders this fixed category → sub-type structure — a row whose subType
+// doesn't match one of these is invisible there (can't be seen, edited, or
+// deleted from Packing Master at all). Applying the same check here keeps
+// this item search limited to packing materials the user can actually find
+// and manage in Packing Material Master, instead of surfacing orphaned rows
+// that read as "materials I never created."
+function isProperlyCategorized(pm) {
+  return (SUB_TYPES[pm.category] || []).some(s => s.value === pm.subType);
+}
 import "./GenerateForm.css";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -299,7 +310,7 @@ export default function GenerateForm({ onGenerated, prefill, onGateUsed }) {
   // Load RM list and packing materials once
   useEffect(() => {
     rmApi.list({}).then(r => setRmList(r.data || [])).catch(console.error);
-    packingMaterialApi.list().then(r => setPmList(r.data || [])).catch(console.error);
+    packingMaterialApi.list().then(r => setPmList((r.data || []).filter(isProperlyCategorized))).catch(console.error);
   }, []);
 
   // Auto-fill header from gate inward selection

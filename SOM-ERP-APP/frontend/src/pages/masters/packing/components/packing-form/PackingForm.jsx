@@ -1,4 +1,4 @@
-﻿import { X, Save, Plus } from 'lucide-react'
+﻿import { X, Save, Plus, CheckCircle2 } from 'lucide-react'
 import { Button, IconButton } from '../../../../../components/ui'
 import {
   CATEGORIES, CAT, SUB_TYPES,
@@ -50,7 +50,7 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                       ? `${cat.cls.border} ${cat.cls.light} ring-2 ${cat.cls.ring}`
                       : 'border-gray-200 hover:border-gray-300 bg-gray-50'
                   }`}>
-                  <div className="text-2xl mb-1.5">{cat.icon}</div>
+                  <div className={`flex justify-center mb-1.5 ${form.category === cat.value ? cat.cls.text : 'text-gray-500'}`}><cat.icon size={22} strokeWidth={1.6} /></div>
                   <div className="text-[11px] font-bold text-gray-700 leading-snug">{cat.label}</div>
                   <div className={`text-[10px] font-mono mt-1 ${cat.cls.text}`}>{cat.prefix}-001…</div>
                 </button>
@@ -72,7 +72,7 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                           ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                           : 'border-gray-200 text-gray-600 hover:border-gray-300 bg-white'
                       }`}>
-                      <span>{s.icon}</span>{s.value}
+                      <s.icon size={14} />{s.value}
                     </button>
                   ))}
                 </div>
@@ -194,7 +194,7 @@ export default function PackingForm({ editing, form, onChange, saving, msg, onSa
                     {/* Show custom selected ply indicator if not a preset */}
                     {form.ply && !PLY_PRESETS.includes(Number(form.ply)) && (
                       <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-300 rounded-lg text-sm font-bold text-emerald-700">
-                        ✓ {form.ply} PLY selected
+                        <CheckCircle2 size={14} /> {form.ply} PLY selected
                       </div>
                     )}
                   </div>

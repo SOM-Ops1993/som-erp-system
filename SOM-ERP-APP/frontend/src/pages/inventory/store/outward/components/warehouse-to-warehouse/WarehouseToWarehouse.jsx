@@ -1,6 +1,8 @@
-﻿import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { outwardApi } from '../../../../../../api/inventory.js'
-import { Button } from '../../../../../../components/ui'
+import { Button, IconButton } from '../../../../../../components/ui'
+import QRScanner from '../../../../../../components/QRScanner/QRScanner.jsx'
+import { Camera } from 'lucide-react'
 import './WarehouseToWarehouse.css'
 
 const WAREHOUSES = ['Main Store', 'Cold Store', 'RM Store', 'FG Store', 'Quarantine Store']
@@ -15,23 +17,36 @@ export default function WarehouseToWarehouse() {
   const [submitting, setSub]    = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState('')
+  const [showScanner, setShowScanner] = useState(false)
 
-  const lookupPack = async () => {
-    const id = packId.trim()
+  // Looks up a pack directly by its packId (as scanned from the QR code or
+  // typed in) via a dedicated single-pack endpoint — no more guessing an RM
+  // code out of the packId string and querying that item's "available
+  // packs" list, which is what silently broke this before.
+  const lookupPackById = useCallback(async (id) => {
     if (!id) return
-    setError(''); setPackInfo(null)
+    setError(''); setSuccess(''); setPackInfo(null)
+    setLoading(true)
     try {
-      setLoading(true)
-      const r = await outwardApi.availablePacks(id.split('-').slice(1, 2).join('-') || id)
-      // Try to find the pack directly from available packs list
-      // If user typed a packId, search for it
-      const all = r.data || []
-      const found = all.find(p => p.packId === id)
-      if (found) { setPackInfo(found); setFrom(found.warehouse || '') }
-      else setError(`Pack "${id}" not found in available stock`)
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
-  }
+      const r = await outwardApi.getPack(id)
+      const data = r.data
+      setPackInfo(data)
+      setFrom(data.warehouse || '')
+    } catch (e) {
+      setError(e.response?.data?.error || e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const lookupPack = () => lookupPackById(packId.trim())
+
+  const onQRScan = useCallback((value) => {
+    setShowScanner(false)
+    const id = value.trim()
+    setPackId(id)
+    lookupPackById(id)
+  }, [lookupPackById])
 
   const submit = async () => {
     if (!packId.trim() || !to) { setError('Pack ID and destination warehouse required'); return }
@@ -46,6 +61,14 @@ export default function WarehouseToWarehouse() {
 
   return (
     <div className="p-4 md:p-6 max-w-lg">
+      {showScanner && (
+        <QRScanner
+          label="Scan Pack QR Code"
+          onScan={onQRScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
       <p className="text-sm text-gray-500 mb-5">
         Move a pack from one warehouse/location to another. Stock quantity remains the same — only the location is updated.
       </p>
@@ -57,6 +80,7 @@ export default function WarehouseToWarehouse() {
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Pack ID *</label>
           <div className="flex gap-2">
+            <IconButton icon={Camera} onClick={() => setShowScanner(true)} tooltip="Scan pack QR code" variant="purple" size="md" />
             <input
               value={packId}
               onChange={e => setPackId(e.target.value)}
@@ -65,13 +89,17 @@ export default function WarehouseToWarehouse() {
               className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Button onClick={lookupPack} disabled={loading} loading={loading} variant="secondary" size="sm">
-              {loading ? '?' : 'Lookup'}
+              Lookup
             </Button>
           </div>
+          <p className="text-xs text-gray-400 mt-1.5">
+            Scan the bag's QR code to auto-fill its current warehouse below.
+          </p>
           {packInfo && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm">
               <span className="font-medium text-blue-800">{packInfo.itemName}</span>
-              <span className="text-blue-600 ml-2">· Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} kg available</span>
+              <span className="text-blue-600 ml-2">· Lot: {packInfo.lotNo} · Bag #{packInfo.bagNo} · {packInfo.remainingQty} {packInfo.uom} available</span>
+              {packInfo.warehouse && <span className="text-blue-600 ml-2">· Currently in: {packInfo.warehouse}</span>}
             </div>
           )}
         </div>
@@ -81,6 +109,7 @@ export default function WarehouseToWarehouse() {
           <input
             value={from}
             onChange={e => setFrom(e.target.value)}
+            disabled={!!packInfo?.warehouse}
             placeholder="Current location (optional)"
             list="wh-list-from"
             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
@@ -115,7 +144,7 @@ export default function WarehouseToWarehouse() {
         </div>
 
         <Button onClick={submit} disabled={submitting || !packId.trim() || !to} loading={submitting} variant="primary" fullWidth>
-          {submitting ? 'Recording?' : 'Record Warehouse Transfer'}
+          {submitting ? 'Recording…' : 'Record Warehouse Transfer'}
         </Button>
       </div>
     </div>

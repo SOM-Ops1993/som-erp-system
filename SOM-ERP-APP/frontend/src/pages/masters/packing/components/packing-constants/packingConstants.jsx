@@ -1,8 +1,14 @@
+import {
+  FlaskConical, ShoppingBag, Package,
+  FlaskRound, Beaker, Drum, Cylinder, Package2, CircleDot, Plug,
+  Layers, FileText, Box, PackageCheck, Boxes,
+} from 'lucide-react'
+
 export const CATEGORIES = [
   {
     value: 'BOTTLES_TINS',
     label: 'Bottles / Containers / Tins',
-    icon: '🧴',
+    icon: FlaskConical,
     desc: 'HDPE bottles, CL tins, barrels, containers, jars',
     prefix: 'BTL',
     cls: { grad: 'from-blue-500 to-blue-700', header: 'bg-blue-600', light: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', badge: 'bg-blue-100 text-blue-700', ring: 'ring-blue-500' },
@@ -10,7 +16,7 @@ export const CATEGORIES = [
   {
     value: 'POUCHES_BAGS',
     label: 'Pouches / Bags / Covers',
-    icon: '🛍️',
+    icon: ShoppingBag,
     desc: 'Laminated pouches, LD covers, liners, handle bags',
     prefix: 'PCH',
     cls: { grad: 'from-violet-500 to-violet-700', header: 'bg-violet-600', light: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-600', badge: 'bg-violet-100 text-violet-700', ring: 'ring-violet-500' },
@@ -18,7 +24,7 @@ export const CATEGORIES = [
   {
     value: 'CORRUGATED_BOXES',
     label: 'Corrugated Boxes / Cartons',
-    icon: '📦',
+    icon: Package,
     desc: '3, 5 & 7 ply boxes, shippers, inner cartons',
     prefix: 'CBB',
     cls: { grad: 'from-emerald-500 to-emerald-700', header: 'bg-emerald-600', light: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700', ring: 'ring-emerald-500' },
@@ -29,25 +35,25 @@ export const CAT = Object.fromEntries(CATEGORIES.map(c => [c.value, c]))
 
 export const SUB_TYPES = {
   BOTTLES_TINS: [
-    { value: 'Bottle',      icon: '🍾' },
-    { value: 'Container',   icon: '🧴' },
-    { value: 'Tin',         icon: '🥫' },
-    { value: 'Barrel',      icon: '🛢️' },
-    { value: 'Drum',        icon: '🏺' },
-    { value: 'Jar',         icon: '🫙' },
-    { value: 'Lid / Cap',   icon: '⚙️' },
-    { value: 'Plug / Vent', icon: '🔌' },
+    { value: 'Bottle',      icon: FlaskRound },
+    { value: 'Container',   icon: FlaskConical },
+    { value: 'Tin',         icon: Beaker },
+    { value: 'Barrel',      icon: Drum },
+    { value: 'Drum',        icon: Cylinder },
+    { value: 'Jar',         icon: Package2 },
+    { value: 'Lid / Cap',   icon: CircleDot },
+    { value: 'Plug / Vent', icon: Plug },
   ],
   POUCHES_BAGS: [
-    { value: 'Pouch',  icon: '👝' },
-    { value: 'Bag',    icon: '🛍️' },
-    { value: 'Cover',  icon: '🫙' },
-    { value: 'Liner',  icon: '📄' },
+    { value: 'Pouch',  icon: Package },
+    { value: 'Bag',    icon: ShoppingBag },
+    { value: 'Cover',  icon: Layers },
+    { value: 'Liner',  icon: FileText },
   ],
   CORRUGATED_BOXES: [
-    { value: 'Regular CBB',  icon: '📦' },
-    { value: 'Shipper Box',  icon: '📫' },
-    { value: 'Inner Box',    icon: '📭' },
+    { value: 'Regular CBB',  icon: Box },
+    { value: 'Shipper Box',  icon: PackageCheck },
+    { value: 'Inner Box',    icon: Boxes },
   ],
 }
 

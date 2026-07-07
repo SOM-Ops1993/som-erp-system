@@ -1,9 +1,9 @@
-﻿import { ChevronLeft, Plus, Pencil, X } from 'lucide-react'
+﻿import { ChevronLeft, Plus, Pencil, X, Package, AlertTriangle } from 'lucide-react'
 import { Button, IconButton } from '../../../../../components/ui'
 import { SUB_TYPES, getChips, Chip } from '../packing-constants/packingConstants.jsx'
 
 export default function ItemList({ catMeta, selSub, subItems, groupedByName, onBack, onBackToCategories, onAdd, onEdit, onDelete }) {
-  const subIcon = (SUB_TYPES[catMeta.value] || []).find(s => s.value === selSub)?.icon || '📦'
+  const SubIcon = (SUB_TYPES[catMeta.value] || []).find(s => s.value === selSub)?.icon || Package
 
   return (
     <div className="px-6 py-5">
@@ -17,7 +17,7 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{subIcon} {selSub}</h1>
+          <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><SubIcon size={20} className={catMeta.cls.text} />{selSub}</h1>
           <p className="text-xs text-gray-400 mt-0.5">
             <span className={catMeta.cls.text}>{catMeta.label}</span>
             {' · '}{subItems.length} item{subItems.length !== 1 ? 's' : ''}
@@ -34,7 +34,7 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
 
       {subItems.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
-          <div className="text-5xl mb-3">{subIcon}</div>
+          <div className="flex justify-center mb-3"><SubIcon size={48} strokeWidth={1.5} className="text-gray-300" /></div>
           <p className="font-semibold text-gray-500">No items yet</p>
           <Button variant="ghost" onClick={onAdd} className="mt-3">Add the first item</Button>
         </div>
@@ -59,7 +59,7 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
                       <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
                         total === 0 ? 'bg-red-50 text-red-500 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
                       }`}>
-                        <span>📦</span>
+                        <Package size={12} />
                         {total.toLocaleString()} {variants[0]?.uom || 'Nos'} total
                       </span>
                     )
@@ -92,7 +92,7 @@ export default function ItemList({ catMeta, selSub, subItems, groupedByName, onB
                         ? 'bg-amber-50 text-amber-700 border-amber-200'
                         : 'bg-green-50 text-green-700 border-green-200'
                     }`}>
-                      {qty === 0 && <span className="text-[10px]">⚠</span>}
+                      {qty === 0 && <AlertTriangle size={11} />}
                       {qty.toLocaleString()}
                       <span className="font-normal text-[10px] opacity-70">{item.uom || 'Nos'}</span>
                     </div>

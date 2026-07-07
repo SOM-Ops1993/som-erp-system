@@ -2,9 +2,16 @@
    stock-loss-adjustment) + object-fit: cover on the video below keeps the
    feed filling the box regardless of the stream's native resolution —
    without object-fit, a stream narrower than the container leaves a black
-   gap under the video. */
+   gap under the video. Mobile gets a ~30% shorter box so the camera doesn't
+   dominate the whole viewport; desktop (>=768px) is untouched. */
 .pi-camera-container {
-  height: 280px;
+  height: 196px;
+}
+
+@media (min-width: 768px) {
+  .pi-camera-container {
+    height: 280px;
+  }
 }
 
 .pi-camera-container video {

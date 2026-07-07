@@ -24,14 +24,6 @@ export const erpRoutes = [
     element={<MicrobialManagement />}
   />,
   <Route key="erp-bom" path="/erp/bom" element={<BomIssuance />} />,
-  <Route
-    key="erp-planning"
-    path="/erp/planning"
-    element={
-      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
-        <PlanningPage />
-      </div>
-    }
-  />,
+ 
   // <Route key="erp-sales" path="/erp/sales" element={<SalesOrders />} />,
 ];

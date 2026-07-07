@@ -1,6 +1,5 @@
 import prisma from '../../../../db.js'
 import * as XLSX from 'xlsx'
-import { findBestRmMatch } from '../../../../utils/fuzzy.js'
 
 function col(row, ...keys) {
   for (const key of keys) {
@@ -134,7 +133,7 @@ export const executeImport = async (req, res) => {
     const results = {
       rmMaster: 0, productMaster: 0, equipmentMaster: 0,
       recipeBom: 0, printMaster: 0, inward: 0, outward: 0,
-      fuzzyMatches: 0, fuzzyLog: [],
+      unmatchedRm: 0,
       errors: []
     }
 
@@ -283,6 +282,32 @@ export const executeImport = async (req, res) => {
       existingRms.forEach(r => { rmsByName[r.itemName.toLowerCase()] = r })
       const newProductCodes = []
 
+      // Every recipe row must land in the DB — even one recipe_db has a
+      // @@unique([productCode, rmCode]) constraint, so a product with more
+      // than one unmatched ingredient can't literally store "NaN" twice.
+      // First unmatched ingredient in a product gets "NaN", the next "NaN-2",
+      // etc. — still trivially recognizable as unmatched (rmCode starts with
+      // "NaN"), and picked up automatically by the existing Fix RM Mapping /
+      // recipe-drift-sync tools since neither is a real RM Master code.
+      const nanCounters = {} // productCode -> highest NaN suffix used so far
+      async function nextNanCode(productCode) {
+        if (nanCounters[productCode] === undefined) {
+          const existing = await prisma.recipeDb.findMany({
+            where: { productCode, rmCode: { startsWith: 'NaN' } },
+            select: { rmCode: true },
+          })
+          let max = 0
+          existing.forEach(r => {
+            const m = /^NaN(?:-(\d+))?$/.exec(r.rmCode)
+            if (m) max = Math.max(max, m[1] ? parseInt(m[1], 10) : 1)
+          })
+          nanCounters[productCode] = max
+        }
+        nanCounters[productCode]++
+        const n = nanCounters[productCode]
+        return n === 1 ? 'NaN' : `NaN-${n}`
+      }
+
       for (const row of rows) {
         try {
           const productName = col(row, 'productname', 'product name', 'product', 'finished good', 'fg name')
@@ -307,28 +332,37 @@ export const executeImport = async (req, res) => {
             await prisma.productMaster.update({ where: { productCode: product.productCode }, data: { plant: section } })
           }
 
-          // RM: match to existing RM Master ONLY — never auto-create RM records
-          let rm = rmsByName[rmName.toLowerCase()]
-          if (!rm) {
-            // Fuzzy match against all existing RMs (threshold 0.75 — handles minor spelling differences)
-            const match = findBestRmMatch(rmName, existingRms, 0.75)
-            if (match) {
-              rm = match.candidate
-              const pct = Math.round(match.score * 100)
-              results.fuzzyMatches++
-              results.fuzzyLog.push(`"${rmName}" → "${rm.itemName}" [${pct}% ${match.method}] (product: ${productName})`)
-              rmsByName[rmName.toLowerCase()] = rm  // cache so subsequent rows reuse this match
-            } else {
-              results.errors.push(`⚠️ RM not found: "${rmName}" (product: ${productName}) — add this RM to RM Master first, then re-import`)
-              continue  // skip this BOM line — don't pollute RM Master with auto-generated codes
-            }
+          // RM: exact name match only (case-insensitive, trimmed) — no fuzzy
+          // matching here. Fuzzy matching risks silently assigning the WRONG
+          // item code (seen in testing: "Totally Fake Ingredient Alpha" fuzzy-
+          // matched "Alpha Amylase- Liquid" at 80% confidence — clearly not
+          // the same thing), which is worse than leaving it for manual review.
+          // The recipe's own typed name is NEVER rewritten either way — only
+          // the resolved Item Code differs; an unmatched ingredient keeps its
+          // original name and gets rmCode "NaN" (or "NaN-2", "NaN-3"... within
+          // the same product) instead of being silently dropped, so 100% of
+          // BOM lines still make it into recipe_db, reconcilable later via
+          // Fix RM Mapping.
+          const rm = rmsByName[rmName.toLowerCase()]
+          let rmCode
+          if (rm) {
+            rmCode = rm.itemCode
+          } else {
+            // Reuse the same placeholder on a re-import of the same file,
+            // instead of minting a fresh NaN-n every time.
+            const existingNanRow = await prisma.recipeDb.findFirst({
+              where: { productCode: product.productCode, rmName, rmCode: { startsWith: 'NaN' } },
+            })
+            rmCode = existingNanRow ? existingNanRow.rmCode : await nextNanCode(product.productCode)
+            results.unmatchedRm = (results.unmatchedRm || 0) + 1
+            results.errors.push(`❌ RM not found: "${rmName}" (product: ${productName}) — imported with item code "${rmCode}"; add it to RM Master with this exact name, then use Fix RM Mapping to reconcile`)
           }
 
           const finalRoleType = roleType || 'INGREDIENT'
           await prisma.recipeDb.upsert({
-            where: { productCode_rmCode: { productCode: product.productCode, rmCode: rm.itemCode } },
-            create: { productCode: product.productCode, productName: product.productName, rmCode: rm.itemCode, rmName: rm.itemName, qtyPerUnit, uom, roleType: finalRoleType },
-            update: { qtyPerUnit, uom, productName: product.productName, rmName: rm.itemName, roleType: finalRoleType }
+            where: { productCode_rmCode: { productCode: product.productCode, rmCode } },
+            create: { productCode: product.productCode, productName: product.productName, rmCode, rmName, qtyPerUnit, uom, roleType: finalRoleType },
+            update: { qtyPerUnit, uom, productName: product.productName, rmName, roleType: finalRoleType }
           })
           results.recipeBom++
         } catch (e) { results.errors.push(`Recipe row: ${e.message}`) }

@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, AlertTriangle } from 'lucide-react'
 import { packingMaterialApi } from '../../../../api/masters.js'
 import { Button, BackButton } from '../../../../components/ui'
 import CategoryList  from '../components/category-list/CategoryList.jsx'
@@ -113,7 +113,7 @@ export default function PackingMaster() {
     <div className="min-h-screen bg-gray-50">
       {loadErr && (
         <div className="mx-6 mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
-          <span>⚠️ {loadErr}</span>
+          <span className="flex items-center gap-1.5"><AlertTriangle size={15} />{loadErr}</span>
           <Button variant="ghost" icon={RefreshCw} size="xs" onClick={load} className="ml-auto shrink-0">Retry</Button>
         </div>
       )}

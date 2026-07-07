@@ -59,11 +59,10 @@ export const APP_NAV = [
   {
     group: 'PRODUCTION & PLANNING',
     items: [
-      { to: '/planning',      label: 'Production',        Icon: Factory },
-      { to: '/erp/planning',  label: 'Planning',          Icon: CalendarDays },
+      { to: '/production',      label: 'Production',        Icon: Factory },
+      { to: '/planning',        label: 'Planning',          Icon: CalendarDays },
       // { to: '/erp/bom',       label: 'BOM Issuance',      Icon: Beaker },
-      { to: '/tracker',       label: 'Batch Tracker',     Icon: Activity },
-      { to: '/production',    label: 'Production Master', Icon: Cog },
+      { to: '/tracker',       label: 'Batch Tracker',     Icon: Activity }, 
       { to: '/sfg-store',     label: 'SFG',               Icon: TestTube2 },
     ],
   },

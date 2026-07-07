@@ -1,5 +1,5 @@
-import { bomInnerHtml, bomDualHalfPage, isDualCopy, buildPrintHtml } from '../utils/bomPrintTemplates.js'
-import { printBoms, bomTitle } from '../utils/bomIssuancePrint.js'
+import { bomInnerHtml, bomDualHalfPage, isDualCopy, buildPrintHtml } from '../../utils/bomPrintTemplates.js'
+import { printBoms, bomTitle } from '../../utils/bomIssuancePrint.js'
 
 export default function PreviewTab({ previews, onBack, onConfirm, confirming }) {
   if (!previews.length) {

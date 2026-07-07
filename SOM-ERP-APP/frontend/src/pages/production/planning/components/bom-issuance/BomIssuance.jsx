@@ -1,21 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { recipeApi } from '../../../../../api/masters.js'
+import { rmApi } from '../../../../../api/inventory.js'
 import { planTasksApi } from '../../../../../api/production.js'
-import { genId, incrCode, scaleToQty, state as printState } from '../utils/bomPrintTemplates.js'
-import { readArchivedBoms, readMeta, archiveBoms } from '../utils/bomIssuanceStorage.js'
+import { genId, incrCode, scaleToQty, state as printState } from '../../utils/bomPrintTemplates.js'
+import { readArchivedBoms, readMeta, archiveBoms } from '../../utils/bomIssuanceStorage.js'
 import { toCanonical } from '../../../../../utils/uom.js'
-import { makeRows, toComponents, fromComponents } from './ComponentsTable.jsx'
-import IssueBomTab from './IssueBomTab.jsx'
-import PreviewTab from './PreviewTab.jsx'
-import ArchiveTab from './ArchiveTab.jsx'
-import RecipeLibraryTab from './RecipeLibraryTab.jsx'
-import { CheckCircle, AlertCircle, Loader, X } from 'lucide-react'
+import { makeRows, toComponents, fromComponents } from '../components-table/ComponentsTable.jsx'
+import IssueBomTab from '../issue-bom-tab/IssueBomTab.jsx'
+import PreviewTab from '../preview-tab/PreviewTab.jsx'
+import ArchiveTab from '../archive-tab/ArchiveTab.jsx'
+import RecipeLibraryTab from '../recipe-library-tab/RecipeLibraryTab.jsx'
+import { CheckCircle, AlertCircle, Loader, X, FileText, Eye, Archive, BookOpen } from 'lucide-react'
 
 const TABS = [
-  { id: 'issue',   label: '📄 Issue BOM' },
-  { id: 'preview', label: '👁 Preview' },
-  { id: 'archive', label: '🗄 Archive' },
-  { id: 'recipes', label: '📚 Recipe Library' },
+  { id: 'issue',   label: 'Issue BOM',      icon: FileText },
+  { id: 'preview', label: 'Preview',        icon: Eye },
+  { id: 'archive', label: 'Archive',        icon: Archive },
+  { id: 'recipes', label: 'Recipe Library', icon: BookOpen },
 ]
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
@@ -62,12 +63,15 @@ export default function BomIssuance() {
   const [suggestions, setSuggestions]       = useState([])
   const [activeRecipe, setActiveRecipe]     = useState(null) // { productCode, perUnitComponents }
   const [recipeLoadedMsg, setRecipeLoadedMsg] = useState('')
+  const [rmList, setRmList]                 = useState([])
+  const [savingCorrections, setSavingCorrections] = useState(false)
 
   const [archivedBoms, setArchivedBoms] = useState(() => readArchivedBoms())
   const [meta, setMeta]                 = useState(() => readMeta())
 
   useEffect(() => {
     recipeApi.products().then(r => setRecipeProducts(r.data || [])).catch(() => {})
+    rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
   }, [])
 
   // Keep the shared print-template settings singleton in sync with the React toggles.
@@ -99,6 +103,7 @@ export default function BomIssuance() {
       const r = await recipeApi.list({ productCode })
       const perUnit = (r.data || []).map(l => ({
         sno: '', component: l.rmName, qty: String(l.qtyPerUnit), uom: l.uom || '', remarks: l.roleType || '', isHeader: false,
+        rmCode: l.rmCode,
       }))
       setActiveRecipe({ productCode, perUnit })
       const bsz = canonicalBatchSize(form.batchSize, form.batchSizeUom)
@@ -140,6 +145,30 @@ export default function BomIssuance() {
     setRecipeLoadedMsg(`✓ Recipe scaled to ${form.batchSize} ${form.batchSizeUom} (stored per 1 unit)`)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.batchSize, form.batchSizeUom])
+
+  // Renames a recipe_db rmCode to the RM Master item the user's corrected
+  // component text actually matched — same mechanism as Recipe Master's own
+  // "Fix RM Mapping" tool, just surfaced here where the mismatch is spotted.
+  // Reassigns every recipe row using the old code across all products, not
+  // just the one currently loaded (the banner in ComponentsTable says so).
+  const handleSaveCorrections = async (corrections) => {
+    if (!corrections.length) return
+    setSavingCorrections(true)
+    setBanner({ type: 'loading', msg: `Saving ${corrections.length} correction(s) to Recipe Master…` })
+    try {
+      const res = await recipeApi.fixRmMapping(corrections)
+      setBanner({ type: 'success', msg: `✓ ${res.totalFixed || 0} recipe row(s) updated across all products using the old code(s)` })
+      setRows(prev => prev.map(r => {
+        const hit = corrections.find(c => c.fromCode === r.rmCode)
+        return hit ? { ...r, rmCode: hit.toCode } : r
+      }))
+      rmApi.list({}).then(r => setRmList(r.data || [])).catch(() => {})
+    } catch (e) {
+      setBanner({ type: 'error', msg: `Failed to save corrections: ${e.message}` })
+    } finally {
+      setSavingCorrections(false)
+    }
+  }
 
   const onGenerate = () => {
     setError('')
@@ -221,9 +250,9 @@ export default function BomIssuance() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#f0f4f8]">
+    <div className="flex flex-col h-full bg-slate-50">
       {banner && (
-        <div className={`px-5 py-2 border-b flex items-center gap-2 text-[13px] font-medium flex-shrink-0 ${bannerCls[banner.type]}`}>
+        <div className={`px-5 py-2.5 border-b flex items-center gap-2 text-[13px] font-medium flex-shrink-0 ${bannerCls[banner.type]}`}>
           {banner.type === 'loading' && <Loader size={14} className="animate-spin flex-shrink-0" />}
           {banner.type === 'success' && <CheckCircle size={14} className="flex-shrink-0" />}
           {banner.type === 'error'   && <AlertCircle size={14} className="flex-shrink-0" />}
@@ -234,14 +263,22 @@ export default function BomIssuance() {
         </div>
       )}
 
-      <div className="bg-white border-b-2 border-gray-200 flex px-6 overflow-x-auto flex-shrink-0">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`px-5 py-3 text-[13px] font-semibold border-b-[3px] -mb-0.5 whitespace-nowrap transition
-              ${activeTab === t.id ? 'text-indigo-600 border-indigo-600' : 'text-gray-400 border-transparent hover:text-gray-700'}`}>
-            {t.label}{t.id === 'preview' && previews.length > 0 ? ` (${previews.length})` : ''}
-          </button>
-        ))}
+      <div className="bg-white border-b border-slate-200 flex px-6 overflow-x-auto flex-shrink-0 gap-1">
+        {TABS.map(t => {
+          const Icon = t.icon
+          const active = activeTab === t.id
+          return (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-1.5 px-4 py-3.5 text-[13px] font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors
+                ${active ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-700 hover:border-slate-200'}`}>
+              <Icon size={14.5} />
+              {t.label}
+              {t.id === 'preview' && previews.length > 0 && (
+                <span className="ml-0.5 text-[10.5px] font-bold bg-indigo-100 text-indigo-700 rounded-full px-1.5 py-0.5">{previews.length}</span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -252,6 +289,7 @@ export default function BomIssuance() {
             productSuggestions={suggestions} onProductSearch={onProductSearch} onSelectProduct={onSelectProduct}
             recipeLoadedMsg={recipeLoadedMsg}
             onGenerate={onGenerate} generating={generating} error={error}
+            rmList={rmList} onSaveCorrections={handleSaveCorrections} savingCorrections={savingCorrections}
           />
         )}
         {activeTab === 'preview' && (

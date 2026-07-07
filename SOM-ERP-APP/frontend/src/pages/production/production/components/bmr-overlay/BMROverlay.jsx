@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react'
-import { sfgAddEntry } from '../../utils/storage.js'
+// Shared with Planning (production/planning) — kept there, not duplicated.
+import { sfgAddEntry } from '../../../planning/utils/storage.js'
 import { planTasksApi } from '../../../../../api/production.js'
 import './BMROverlay.css'
 

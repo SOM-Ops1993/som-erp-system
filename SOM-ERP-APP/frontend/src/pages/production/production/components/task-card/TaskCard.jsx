@@ -1,7 +1,8 @@
 ﻿import { useEffect, useState } from 'react'
-import { PLANT_CONFIG } from '../../data/plantConfig.js'
-import { fmtDateLabel } from '../../utils/date.js'
-import StatusBadge from '../ui/status-badge/StatusBadge.jsx'
+// Shared with Planning (production/planning) — kept there, not duplicated.
+import { PLANT_CONFIG } from '../../../planning/data/plantConfig.js'
+import { fmtDateLabel } from '../../../planning/utils/date.js'
+import StatusBadge from '../../../planning/components/ui/status-badge/StatusBadge.jsx'
 import './TaskCard.css'
 
 export default function TaskCard({ task, onEdit, onStatusUpdate, onBMR }) {

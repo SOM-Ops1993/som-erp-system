@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { fmtDate } from '../utils/bomPrintTemplates.js'
-import { printBoms, bomTitle } from '../utils/bomIssuancePrint.js'
+import { fmtDate } from '../../utils/bomPrintTemplates.js'
+import { printBoms, bomTitle } from '../../utils/bomIssuancePrint.js'
 
 export default function ArchiveTab({ boms, recipeCount, meta }) {
   const [prodFilter, setProdFilter] = useState('')

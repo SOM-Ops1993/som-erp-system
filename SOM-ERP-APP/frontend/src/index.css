@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-gray-50 text-gray-900; }
+body {
+  @apply bg-gray-50 text-gray-900;
+}
 
 .scan-line {
   position: absolute;
@@ -11,7 +13,27 @@ body { @apply bg-gray-50 text-gray-900; }
   background: linear-gradient(90deg, transparent, #3b82f6, transparent);
   animation: scanline 2s linear infinite;
 }
+
 @keyframes scanline {
-  0% { top: 0; }
-  100% { top: 100%; }
+  0% {
+    top: 0;
+  }
+
+  100% {
+    top: 100%;
+  }
+}
+
+
+/* Chrome, Edge, Safari, Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

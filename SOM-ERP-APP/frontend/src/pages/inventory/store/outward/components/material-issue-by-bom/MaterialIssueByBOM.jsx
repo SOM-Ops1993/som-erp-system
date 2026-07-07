@@ -401,7 +401,11 @@ export default function MaterialIssueByBOM({ resumeSessionId, onAutoResumed }) {
         ) : (
           <div className="space-y-2 mb-4">
             {filteredTasks.map(task => {
-              const isSelected = selProduct?.productName === task.productName && batchQty === String(task.qty)
+              // Compare by the task's own id, not productName+qty — multiple
+              // cycles of the same batch (same product, same qty, different
+              // batch code) would otherwise all match at once as soon as any
+              // one of them was selected.
+              const isSelected = selTaskId === task.id
               return (
                 <button key={task.id} type="button"
                   onClick={() => selectTask(task)}

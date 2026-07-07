@@ -1,6 +1,6 @@
 import express from 'express'
 import { authenticate, authorize } from '../../../../middleware/auth.js'
-import { listOutward, getAvailablePacks } from './get/outward.controller.js'
+import { listOutward, getAvailablePacks, getPackDetail } from './get/outward.controller.js'
 import { bomScan, bomManual, packReduction, stockAdjustment, bagLossAdjustment, warehouseTransfer, directIssue, bomDirectIssue } from './create/outward.controller.js'
 
 const OutwardRouter = express.Router()
@@ -8,6 +8,7 @@ const storeOrAbove = authorize(['store'])
 const managerOrAbove = authorize(['store'])
 
 OutwardRouter.get('/', authenticate, listOutward)
+OutwardRouter.get('/pack/:packId', authenticate, getPackDetail)
 OutwardRouter.get('/available/:rmCode', authenticate, getAvailablePacks)
 OutwardRouter.post('/bom-scan', authenticate, storeOrAbove, bomScan)
 OutwardRouter.post('/bom-manual', authenticate, storeOrAbove, bomManual)

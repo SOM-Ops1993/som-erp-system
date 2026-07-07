@@ -159,13 +159,16 @@ export default function Import() {
             <ResultCard label="Packs Imported" value={result.printMaster} color="text-indigo-700" />
             <ResultCard label="Inward Records" value={result.inward} color="text-orange-700" />
             <ResultCard label="Outward Records" value={result.outward} color="text-red-700" />
-            {result.fuzzyMatches > 0 && <ResultCard label="Fuzzy RM Matches" value={result.fuzzyMatches} color="text-amber-700" />}
+            {result.unmatchedRm > 0 && <ResultCard label='Unmatched RM (item code "NaN")' value={result.unmatchedRm} color="text-red-700" />}
           </div>
-          {result.fuzzyLog?.length > 0 && (
-            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-amber-800 text-xs font-medium mb-1">🔗 RM name variations auto-matched:</p>
-              {result.fuzzyLog.slice(0, 8).map((l, i) => <p key={i} className="text-amber-700 text-xs">• {l}</p>)}
-              {result.fuzzyLog.length > 8 && <p className="text-amber-600 text-xs mt-1">…and {result.fuzzyLog.length - 8} more</p>}
+          {result.unmatchedRm > 0 && (
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-800 text-xs font-medium mb-1">
+                ❌ {result.unmatchedRm} recipe row(s) had no exact name match in Raw Material Master — imported anyway, unchanged name, with item code "NaN" (or "NaN-2", "NaN-3"… per product) instead of being skipped:
+              </p>
+              <p className="text-red-700 text-xs">
+                Add the missing RM(s) to RM Master with this exact name, then use <strong>Recipe DB → Fix RM Mapping</strong> to reconcile these "NaN" codes to the real item.
+              </p>
             </div>
           )}
           {result.errors?.length > 0 && (

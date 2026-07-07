@@ -35,6 +35,7 @@ export const outwardApi = {
   bomScan:             (data)    => api.post('/outward/bom-scan', data),
   bomManual:           (data)    => api.post('/outward/bom-manual', data),
   availablePacks:      (rmCode)  => api.get(`/outward/available/${encodeURIComponent(rmCode)}`),
+  getPack:             (packId)  => api.get(`/outward/pack/${encodeURIComponent(packId)}`),
   packReduction:       (data)    => api.post('/outward/pack-reduction', data),
   stockAdjustment:     (data)    => api.post('/outward/stock-adjustment', data),
   lossAdjustment:      (data)    => api.post('/outward/loss-adjustment', data),
